@@ -159,11 +159,13 @@ web["port"] = port
 p.write_text(yaml.safe_dump(cfg, allow_unicode=True, sort_keys=False), encoding="utf-8")
 print(f"    web.host={host}  web.port={port}")
 
-# 低配机的常见坑：直接抄了桌面版 config.yaml（threads=400），上机就 OOM
+# 低配机的常见坑：直接抄了桌面版 config.yaml（threads=400），上机就 OOM。
+# 阈值要高于 config.vps.yaml 自带的档位（tcp 160 / real 32 / chunk 200），
+# 否则 VPS 推荐配置会被自己报警，等于没报。
 tcp = ((cfg.get("check") or {}).get("tcp") or {})
 real = ((cfg.get("check") or {}).get("real") or {})
-if int(tcp.get("threads") or 0) > 128 or int(real.get("threads") or 0) > 32 \
-        or int(real.get("chunk") or 0) > 200:
+if int(tcp.get("threads") or 0) > 200 or int(real.get("threads") or 0) > 40 \
+        or int(real.get("chunk") or 0) > 250:
     print("    [!] 这份配置是桌面档的并发（threads/chunk 偏大），小内存机器容易 OOM。")
     print("        建议改成 tcp.threads=48~64 / real.threads=12~16 / real.chunk=80~120，")
     print("        或者直接重跑：bash deploy/install.sh --force-config")
