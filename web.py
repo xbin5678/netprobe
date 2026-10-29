@@ -124,6 +124,8 @@ class Runner:
         self.app = app
         self.lock_name = lock_name
         self.state_name = state_name
+        # 只有主流水线才去接定时任务的结果（测速页有自己的记录，别串味）
+        self.adopt_sched = state_name == "web_state.json"
         self.cmds = set(cmds) if cmds else set(CMDS)
         self.proc: subprocess.Popen | None = None
         self.lock = threading.Lock()
@@ -135,7 +137,7 @@ class Runner:
             "started": None, "elapsed": 0.0, "pct": 0.0,
             "phase": "就绪", "detail": "点「一键更新」开始，或选单独步骤。",
             "exit_code": None,
-            "last_ok_at": None, "last_elapsed": 0.0,
+            "last_ok_at": None, "last_elapsed": 0.0, "seen_end": 0.0,
         }
         self._load_last()
 
@@ -152,6 +154,32 @@ class Runner:
                 d = json.load(f)
             self.state["last_ok_at"] = d.get("last_ok_at")
             self.state["last_elapsed"] = float(d.get("last_elapsed") or 0)
+            self.state["seen_end"] = float(d.get("seen_end") or 0)
+        except Exception:
+            pass
+        self._adopt_sched_last()
+
+    def _adopt_sched_last(self) -> None:
+        """把 systemd 定时器跑完的那次结果接过来，顶部「上次耗时」才不会一直是「-」。
+
+        本进程只知道自己在跑的这条流水线；定时任务是另一个进程（run.py tick），
+        它把结果写在 data/schedule_state.json。这里只认「比本进程见过的更晚」
+        的那次，网页手动跑的记录不会被旧的定时结果盖掉。
+        """
+        if not self.adopt_sched:
+            return
+        try:
+            st = schedule.load_state(ROOT)
+            end = float(st.get("last_end") or 0)
+            if end <= 0 or end <= float(self.state.get("seen_end") or 0):
+                return
+            with self.lock:
+                self.state["seen_end"] = end
+                if st.get("last_dur"):
+                    self.state["last_elapsed"] = float(st["last_dur"])
+                if st.get("last_ok"):
+                    self.state["last_ok_at"] = time.strftime(
+                        "%Y-%m-%d %H:%M:%S", time.localtime(end))
         except Exception:
             pass
 
@@ -160,7 +188,8 @@ class Runner:
             os.makedirs(os.path.dirname(self._state_file()), exist_ok=True)
             with open(self._state_file(), "w", encoding="utf-8") as f:
                 json.dump({"last_ok_at": self.state["last_ok_at"],
-                           "last_elapsed": self.state["last_elapsed"]}, f)
+                           "last_elapsed": self.state["last_elapsed"],
+                           "seen_end": self.state.get("seen_end") or 0}, f)
         except Exception:
             pass
 
@@ -192,6 +221,7 @@ class Runner:
             self.subs.discard(q)
 
     def status(self) -> dict:
+        self._adopt_sched_last()
         with self.lock:
             st = dict(self.state)
         if st["running"] and st["started"]:
@@ -326,6 +356,8 @@ class Runner:
             started = self.state["started"] or time.time()
             elapsed = max(0.0, time.time() - started)
             self.state.update(running=False, elapsed=elapsed, exit_code=code)
+            # 记下这次跑到几点，免得定时任务的旧结果盖掉网页刚跑出来的
+            self.state["seen_end"] = time.time()
             if code == 0:
                 self.state.update(pct=100.0, phase="完成",
                                   detail=f"耗时 {elapsed:.0f} 秒")
@@ -462,7 +494,19 @@ class App:
             # 没装 systemd / 容器里跑，拿不到就当未知，不影响排期本身
             return out
         if out["active"] == "active":
-            out["text"] = "运行中（每 10 分钟检查一次）"
+            # 顺手把「下一次检查心跳」的时间带上，让人看得出这台机器确实在轮询
+            try:
+                lt = subprocess.run(["systemctl", "list-timers", "nodehub-update.timer",
+                                     "--output=json", "--no-pager"],
+                                    capture_output=True, text=True, timeout=3)
+                rows = json.loads((lt.stdout or "").strip() or "[]")
+                nxt = float((rows[0] or {}).get("next") or 0) / 1e6
+                if nxt > 0:
+                    out["next"] = time.strftime("%H:%M:%S", time.localtime(nxt))
+            except Exception:
+                pass
+            tail = f"，下次检查 {out['next']}" if out["next"] else ""
+            out["text"] = f"运行中（每 10 分钟检查一次{tail}）"
         elif out["active"] in ("inactive", "failed"):
             out["text"] = "未运行（排期不会生效，用 systemctl start nodehub-update.timer 打开）"
         return out
