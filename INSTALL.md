@@ -58,7 +58,9 @@ curl -fsSL https://raw.githubusercontent.com/xbin5678/netprobe/main/deploy/boots
 | `--no-cert` | 忽略自有证书，强制 Let's Encrypt | — |
 | `--port <端口>` | 网页端口 | `8787` |
 | `--swap <MB>` | 顺手创建 swap | 不创建 |
-| `--no-timer` | 不装每日自动更新 | 装 |
+| `--at <HH:MM>` | 每天几点自动跑一次 | `04:17` |
+| `--every <小时>` | 每隔几小时自动跑一次（1~168） | 不启用（用 `--at`） |
+| `--no-timer` | 不装定时任务（之后可在网页里打开） | 装 |
 | `--no-caddy` | 不装反代，自己接 nginx | 装 |
 | `--no-service` | 不装 systemd 服务（只铺代码） | 装 |
 | `--force-config` | 覆盖已有 `config.yaml`（先备份） | 不覆盖 |
@@ -85,7 +87,10 @@ curl -fsSL https://ghfast.top/https://raw.githubusercontent.com/xbin5678/netprob
 4. 建 Python 虚拟环境、装依赖（`PyYAML` + `requests`，默认源慢会自动换清华镜像）。
 5. 首次安装时用 `config.vps.yaml` 生成 `config.yaml`；已有配置则沿用。
 6. 下载 mihomo 内核到 `bin/`（约 15MB，按架构自动选）。
-7. 装 systemd 服务 `nodehub-web` 并启动；装 `nodehub-update.timer` 每日 04:27 自动更新。
+7. 装 systemd 服务 `nodehub-web` 并**设为开机自启**（`systemctl enable`）；装
+   `nodehub-update.timer`（同样开机自启），它每 10 分钟叫一次 `run.py tick`，
+   由 `run.py` 按 `data/schedule.json` 判断到点没有——没到点 0.2 秒退出，到点才真跑。
+   排期默认每天 `04:17`，可用 `--at` / `--every` 改，之后也能在网页「定时任务」页改。
 8. 有 `--domain` 时装/配置 Caddy，自动 HTTPS。
 9. 打印访问地址、令牌、常用命令。
 
@@ -106,6 +111,12 @@ curl -s -o /dev/null -w '%{http_code}\n' http://127.0.0.1:8787/
 
 # 3. 拿到访问令牌（期望输出一串字符）
 cat /opt/nodehub/data/web_token.txt
+
+# 4. 开机自启（期望两个都输出 enabled）
+systemctl is-enabled nodehub-web nodehub-update.timer
+
+# 5. 排期（期望输出「每天 04:17」之类）
+/opt/nodehub/.venv/bin/python -c "import sys;sys.path.insert(0,'/opt/nodehub');from nodehub import schedule;print(schedule.describe(schedule.load('/opt/nodehub')))"
 ```
 
 有域名时再验证一次外网：
@@ -115,6 +126,32 @@ curl -s -o /dev/null -w '%{http_code}\n' https://example.com/
 ```
 
 **注意**：第 2、3 条只看服务本身是否起来，不代表节点数据已就绪。首次安装后节点库是空的，需要等自动更新跑一次，或在页面上点「一键更新」。
+
+## 四之二、改后台任务的运行间隔
+
+排期不在 systemd 的 unit 里，而在 `data/schedule.json`，所以改它**不用重启服务、
+不用 root、不用 daemon-reload**：
+
+```bash
+# 网页：打开「定时任务」页，选「每天定时」或「每隔几小时」，点保存，立刻生效
+# 命令行：
+bash /opt/nodehub/deploy/manage.sh schedule            # 看当前排期
+bash /opt/nodehub/deploy/manage.sh schedule 04:30      # 每天 04:30
+bash /opt/nodehub/deploy/manage.sh schedule every 6    # 每 6 小时
+bash /opt/nodehub/deploy/manage.sh schedule off        # 暂停（排期保留）
+```
+
+`data/schedule.json` 内容：
+
+```json
+{"enabled": true, "mode": "daily", "at": "04:17", "every_hours": 6}
+```
+
+- `mode: daily` → 用 `at`；`mode: interval` → 用 `every_hours`（1~168）
+- `enabled: false` → 到点也不跑
+- 文件写坏了会自动退回默认值（每天 04:17），不会让定时任务彻底停摆
+
+机器关机期间错过的任务，开机后第一次检查（开机 2 分钟）就会补跑。
 
 ## 五、无人值守调用的约定
 

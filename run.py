@@ -7,7 +7,11 @@
   python run.py manage     步骤2 管理：去重入库、清理过期
   python run.py check      步骤3 检测：TCP 预筛 + 真连测速，只留可用的
   python run.py all        一条龙（collect -> manage -> check -> 导出）
+  python run.py tick       定时任务入口：到点才跑一次 all，没到点立刻退出
   python run.py stats      查看节点库现状
+
+排期不在 systemd 的 unit 里，在 data/schedule.json（网页「定时任务」页可改）。
+systemd 只负责每 10 分钟叫一次 tick。
 
 常用参数:
   --limit 500      本次最多检测多少个节点
@@ -27,7 +31,7 @@ sys.path.insert(0, ROOT)
 
 import yaml  # noqa: E402
 
-from nodehub import exporter, fetcher, tester  # noqa: E402
+from nodehub import exporter, fetcher, schedule as sched, tester  # noqa: E402
 from nodehub.config import archived_sources, load_config as _load_config  # noqa: E402
 from nodehub.lock import Guard, holder  # noqa: E402
 from nodehub.store import Store, now  # noqa: E402
@@ -435,11 +439,34 @@ def cmd_verify(cfg: dict, store: Store, top: int = 0,
     print(f"  已重新导出 {out['count']} 个节点")
 
 
+def cmd_all(cfg: dict, store: Store, args, t0: float) -> None:
+    """一条龙：采集 → 去重入库 → 检测 → 复核 → 测速 → 汇总导出。
+
+    定时任务（run.py tick）和手动「一键更新」走的都是这一段，所以单独抽出来。
+    """
+    cmd_collect(cfg, store)
+    cmd_manage(cfg, store)
+    incremental = not args.full
+    cmd_check(cfg, store, args.limit, args.no_real, incremental)
+    do_verify = bool((cfg.get("check") or {}).get("verify_after_all", True))
+    # 复核无条件跑：没有新节点的那天（增量模式的常态）正是最需要复核的，
+    # 否则可用列表会一直停在上次的结果上，死掉的节点永远筛不掉。
+    if not args.no_real and do_verify and not args.no_verify:
+        cmd_verify(cfg, store, args.limit)
+    # 最终筛查放在最后：前面的两档把范围缩到几十个，这一步才跑得动。
+    # 注意别把 --limit 传进来：--limit 是「这次检测多少个节点」，
+    # 一旦串到测速这边，--limit 1000 就会变成 1000×10MB ≈ 10GB 流量。
+    # 测速数量只认 config 里的 check.speed.count。
+    if not args.no_real and not args.no_speed:
+        cmd_speed(cfg, store)
+    cmd_summary(cfg, store, time.time() - t0)
+
+
 def main():
     _init_console()
     ap = argparse.ArgumentParser(description="数据采集流水线")
     ap.add_argument("cmd", choices=["collect", "manage", "check", "all", "stats",
-                                    "verify", "speed", "probe"])
+                                    "verify", "speed", "probe", "tick"])
     ap.add_argument("--config", default=os.path.join(ROOT, "config.yaml"))
     ap.add_argument("--limit", type=int, default=0, help="本次最多检测多少节点")
     ap.add_argument("--no-real", action="store_true",
@@ -515,6 +542,17 @@ def main():
                                     size_mb=args.size, max_speed=args.max_speed,
                                     ids=ids or None))
 
+    # 定时任务：systemd timer 每 10 分钟跑一次 tick，这里判断到点没有。
+    # 必须放在抢锁和 _tee_to_file 之前——没到点的时候连锁都不该碰，
+    # 更不能把 data/last_run.log（网页用来显示上次运行日志的）清空。
+    if args.cmd == "tick":
+        is_due, sched_now, _st = sched.due(ROOT)
+        if not is_due:
+            nxt = sched.next_run(sched_now, _st)
+            when = time.strftime("%Y-%m-%d %H:%M", time.localtime(nxt)) if nxt else "未启用"
+            print(f"  未到时间（{sched.describe(sched_now)}，下次 {when}），跳过")
+            sys.exit(0)
+
     # 定时任务和网页按钮共用一把锁：撞上了就老实退出，别互相抢带宽。
     # stats 只读，不占锁。
     guard = None
@@ -546,23 +584,19 @@ def main():
         cmd_verify(cfg, store, args.limit, fps)
     elif args.cmd == "speed":
         cmd_speed(cfg, store, args.limit, fps or None)
-    elif args.cmd == "all":
-        cmd_collect(cfg, store)
-        cmd_manage(cfg, store)
-        incremental = not args.full
-        cmd_check(cfg, store, args.limit, args.no_real, incremental)
-        do_verify = bool((cfg.get("check") or {}).get("verify_after_all", True))
-        # 复核无条件跑：没有新节点的那天（增量模式的常态）正是最需要复核的，
-        # 否则可用列表会一直停在上次的结果上，死掉的节点永远筛不掉。
-        if not args.no_real and do_verify and not args.no_verify:
-            cmd_verify(cfg, store, args.limit)
-        # 最终筛查放在最后：前面的两档把范围缩到几十个，这一步才跑得动。
-        # 注意别把 --limit 传进来：--limit 是「这次检测多少个节点」，
-        # 一旦串到测速这边，--limit 1000 就会变成 1000×10MB ≈ 10GB 流量。
-        # 测速数量只认 config 里的 check.speed.count。
-        if not args.no_real and not args.no_speed:
-            cmd_speed(cfg, store)
-        cmd_summary(cfg, store, time.time() - t0)
+    elif args.cmd in ("all", "tick"):
+        # tick 只是「到点了才走 all」，两者跑的是同一段流程，别写两份
+        sched_state = args.cmd == "tick"
+        if sched_state:
+            sched.mark_start(ROOT)
+        ok = False
+        try:
+            cmd_all(cfg, store, args, t0)
+            ok = True
+        finally:
+            # 一定要记：不记的话下次 tick 会以为「从没跑过」，立刻又跑一遍
+            if sched_state:
+                sched.mark_end(ROOT, ok=ok, rc=0 if ok else 1)
         return
 
     print(f"\n总耗时 {time.time()-t0:.1f}s\n")

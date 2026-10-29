@@ -1,10 +1,14 @@
 [Unit]
-Description=每天 04:17 跑一次数据采集流水线
+Description=数据采集流水线 · 每 10 分钟问一次「到点没有」
+# 排期不在这个 unit 里，在 data/schedule.json（网页「定时任务」页可改）。
+# 这里只负责定时叫醒 run.py tick，由它自己判断该不该跑。
 
 [Timer]
-OnCalendar=*-*-* 04:17:00
-RandomizedDelaySec=15m
-Persistent=true
+# 开机 2 分钟后先问一次：关机期间错过的任务在这一步补上
+OnBootSec=2min
+# 上一次跑完 10 分钟后再问
+OnUnitInactiveSec=10min
+AccuracySec=30s
 Unit=nodehub-update.service
 
 [Install]

@@ -5,7 +5,11 @@
 #   bash deploy/manage.sh start|stop|restart
 #   bash deploy/manage.sh logs [行数]  # 跟网页服务日志
 #   bash deploy/manage.sh run [参数…]  # 立刻在前台跑一次流水线
-#   bash deploy/manage.sh timer on|off # 每日自动更新开关
+#   bash deploy/manage.sh timer on|off # 定时任务总开关（systemd timer）
+#   bash deploy/manage.sh schedule     # 看当前排期（每天几点 / 每几小时）
+#   bash deploy/manage.sh schedule 04:30        # 改成每天 04:30
+#   bash deploy/manage.sh schedule every 6      # 改成每 6 小时
+#   bash deploy/manage.sh schedule off          # 暂停自动跑（timer 还开着，只是到点不跑）
 #   bash deploy/manage.sh url          # 打印访问地址（含令牌）
 #   bash deploy/manage.sh doctor       # 自检：依赖/端口/内存/磁盘
 #   bash deploy/manage.sh cert         # 看当前用的证书和有效期
@@ -60,11 +64,35 @@ case "$cmd" in
 
   timer)
     case "${1:-on}" in
-      on)  systemctl enable --now nodehub-update.timer >/dev/null 2>&1; ok "每日自动更新已开启" ;;
-      off) systemctl disable --now nodehub-update.timer >/dev/null 2>&1; ok "每日自动更新已关闭" ;;
+      on)  systemctl enable --now nodehub-update.timer >/dev/null 2>&1; ok "定时检查已开启（每 10 分钟问一次，到点才跑）" ;;
+      off) systemctl disable --now nodehub-update.timer >/dev/null 2>&1; ok "定时检查已关闭（排期保留）" ;;
       *)   echo "用法: manage.sh timer on|off"; exit 2 ;;
     esac
     systemctl list-timers nodehub-update.timer --no-pager --no-legend 2>/dev/null | sed 's/^/  /'
+    ;;
+
+  schedule)
+    case "${1:-show}" in
+      show|"")
+        "$PY" - <<'PYCODE'
+from nodehub import schedule as s
+d = s.summary(".")
+print(f"  排期：{d['desc']}")
+print(f"  上次：{d['last_text']}    下次：{d['next_text']}")
+PYCODE
+        ;;
+      off)   "$PY" -c 'from nodehub import schedule as s; s.save(".", {"enabled": False}); print("  已暂停自动运行")' ;;
+      on)    "$PY" -c 'from nodehub import schedule as s; s.save(".", {"enabled": True}); print("  已启用自动运行")' ;;
+      every)
+        "$PY" -c "from nodehub import schedule as s; d=s.save('.', {'enabled': True, 'mode': 'interval', 'every_hours': ${2:-6}}); print('  已改成：' + s.describe(d))"
+        ;;
+      [0-9]*:[0-9]*)
+        "$PY" -c "from nodehub import schedule as s; d=s.save('.', {'enabled': True, 'mode': 'daily', 'at': '$1'}); print('  已改成：' + s.describe(d))"
+        ;;
+      *)
+        echo "用法: manage.sh schedule [show|on|off|04:30|every 6]"; exit 2
+        ;;
+    esac
     ;;
 
   url)

@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import requests
 import yaml
 
-from .parser import b64d, normalize_clash_proxy, parse_uri
+from .parser import b64d, normalize_clash_proxy, parse_config_json, parse_uri
 
 UA = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -191,6 +191,13 @@ def parse_subscription(text: str) -> tuple[list[dict], str]:
     text = text.strip()
     if not text:
         return [], "empty"
+
+    # 0) 服务端 config.json（xray / sing-box / hysteria2 启动配置）
+    #    这类文件以 { 开头，不会命中下面的 yaml/uri 分支，必须单独先试
+    if text.startswith("{"):
+        out = parse_config_json(text)
+        if out:
+            return out, "config-json"
 
     # 1) clash / mihomo yaml
     if _looks_like_yaml(text):

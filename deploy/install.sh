@@ -9,9 +9,13 @@
 #                                                           # 用自有证书（放 /root/cert/<域名>/ 会自动认）
 #   bash deploy/install.sh --domain a.com --no-cert     # 忽略自有证书，强制用 Let's Encrypt
 #   bash deploy/install.sh --swap 2048                      # 顺手加 2G swap
-#   bash deploy/install.sh --no-timer                       # 不装每日定时任务
+#   bash deploy/install.sh --at 04:17                       # 每天 04:17 自动跑（默认）
+#   bash deploy/install.sh --every 6                        # 改成每 6 小时跑一次
+#   bash deploy/install.sh --no-timer                       # 不装定时任务
 #   bash deploy/install.sh --no-caddy                       # 不装反代（自己接 nginx）
 #   bash deploy/install.sh --force-config                   # 覆盖已有 config.yaml（先备份）
+#
+# 装完之后排期可以在网页「定时任务」页随时改，不用再碰命令行。
 #
 # 幂等：可以重复跑，用来升级代码后的重装。
 set -euo pipefail
@@ -30,6 +34,8 @@ DO_TIMER=1
 DO_CADDY=1
 FORCE_CONFIG=0
 SWAP_MB=0
+SCHED_AT=""
+SCHED_EVERY=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -40,11 +46,13 @@ while [ $# -gt 0 ]; do
     --no-cert) NO_CERT=1 ;;
     --port) shift; WEB_PORT="${1:-8787}" ;;
     --swap) shift; SWAP_MB="${1:-2048}" ;;
+    --at) shift; SCHED_AT="${1:-}" ;;
+    --every) shift; SCHED_EVERY="${1:-}" ;;
     --no-service) DO_SERVICE=0 ;;
     --no-timer) DO_TIMER=0 ;;
     --no-caddy) DO_CADDY=0 ;;
     --force-config) FORCE_CONFIG=1 ;;
-    -h|--help) sed -n '2,21p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "未知参数: $1（用 --help 看用法）"; exit 1 ;;
   esac
   shift
@@ -171,6 +179,32 @@ if int(tcp.get("threads") or 0) > 200 or int(real.get("threads") or 0) > 40 \
     print("        或者直接重跑：bash deploy/install.sh --force-config")
 PY
 
+# ---------------------------------------------------------------- 4.5 排期
+# 排期不写进 systemd 的 unit（改了要 daemon-reload，还要动 /etc），
+# 统一放 data/schedule.json，systemd 那边只负责每 10 分钟叫一次 run.py tick。
+say "设置后台任务排期"
+.venv/bin/python - "$SCHED_AT" "$SCHED_EVERY" <<'PY'
+import sys
+from nodehub import schedule
+
+at = (sys.argv[1] or "").strip()
+every = (sys.argv[2] or "").strip()
+cur = schedule.load(".")
+new = dict(cur)
+try:
+    if every:
+        new = {"enabled": True, "mode": "interval", "every_hours": float(every),
+               "at": cur.get("at")}
+    elif at:
+        new = {"enabled": True, "mode": "daily", "at": at,
+               "every_hours": cur.get("every_hours")}
+    saved = schedule.save(".", new)
+    print(f"    {schedule.describe(saved)}")
+except Exception as e:
+    print(f"    [!] 排期参数无效（{e}），沿用当前设置：{schedule.describe(cur)}")
+PY
+ok "排期已写入 data/schedule.json（网页「定时任务」页可随时改）"
+
 # ---------------------------------------------------------------- 5. systemd
 if [ "$DO_SERVICE" -eq 1 ]; then
   if [ "$(id -u)" -ne 0 ]; then
@@ -196,10 +230,10 @@ if [ "$DO_SERVICE" -eq 1 ]; then
 
     if [ "$DO_TIMER" -eq 1 ]; then
       systemctl enable --now "$TIMER" >/dev/null 2>&1 || true
-      ok "每日自动更新已开启（$(systemctl list-timers "$TIMER" --no-pager --no-legend 2>/dev/null | awk '{print $1" "$2" "$3}' | head -1)）"
+      ok "定时检查已开启：每 10 分钟问一次，到点才跑（开机自启已启用）"
     else
       systemctl disable --now "$TIMER" >/dev/null 2>&1 || true
-      ok "未开启每日自动更新"
+      ok "未开启定时任务（排期保留，之后可在网页里打开）"
     fi
   fi
 fi
@@ -319,6 +353,13 @@ else
   URL="http://$IP:$WEB_PORT/?token=$TOKEN"
 fi
 
+SCHED_TXT="$(.venv/bin/python -c 'from nodehub import schedule;print(schedule.describe(schedule.load(".")))' 2>/dev/null || echo '每天 04:17')"
+if systemctl is-enabled --quiet "$SERVICE" 2>/dev/null; then
+  BOOT_TXT="已开启（网页服务 + 定时器都会开机自启）"
+else
+  BOOT_TXT="未开启"
+fi
+
 cat <<EOF
 
 ────────────────────────────────────────────────────────
@@ -327,12 +368,15 @@ cat <<EOF
    令牌     $TOKEN
    目录     $APP_DIR
    配置     $APP_DIR/config.yaml
+   排期     $SCHED_TXT（网页「定时任务」页可随时改）
+   自启     $BOOT_TXT
 
  常用命令（也可以直接用 deploy/manage.sh）
    状态     systemctl status $SERVICE
    日志     journalctl -u $SERVICE -f
    手动跑   .venv/bin/python run.py all --config config.yaml
    定时     systemctl list-timers nodehub-update.timer
+   排期     cat data/schedule.json
    改端口   bash deploy/install.sh --port 9000$( [ -n "$DOMAIN" ] && echo " --domain $DOMAIN" )
 
  卸载     bash deploy/uninstall.sh

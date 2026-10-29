@@ -1,5 +1,5 @@
 [Unit]
-Description=数据采集流水线 · 每日更新（无界面跑一次 run.py all）
+Description=数据采集流水线 · 定时检查（到点才跑 run.py all）
 
 [Service]
 Type=oneshot
@@ -7,7 +7,9 @@ User=root
 WorkingDirectory=/opt/nodehub
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONIOENCODING=utf-8
-ExecStart=/opt/nodehub/.venv/bin/python /opt/nodehub/run.py all --config /opt/nodehub/config.yaml
+# tick 只做两件事：没到点 -> 立刻退出（0.2 秒）；到点 -> 跑完整的 all 流程。
+# 排期读 data/schedule.json，改排期不用动这个 unit，也不用 daemon-reload。
+ExecStart=/opt/nodehub/.venv/bin/python /opt/nodehub/run.py tick --config /opt/nodehub/config.yaml
 # 75 = 有别的任务在跑（网页点了按钮 / 上一次还没跑完），属于正常跳过，不算失败
 SuccessExitStatus=75
 Nice=10

@@ -126,6 +126,11 @@ select{
   border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;
 }
 label.f{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+/* 定时任务页的时间/小时数输入，样式跟上面的 select 对齐 */
+input[type=time],input.numin{
+  font:inherit;font-size:13px;padding:5px 8px;border:1px solid var(--line);
+  border-radius:8px;background:var(--card);color:var(--text);
+}
 /* 分段选择（3/5/7 天） */
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card)}
 .seg button{
@@ -243,7 +248,7 @@ td.sel input, th.sel input{margin:0;cursor:pointer;accent-color:var(--accent)}
   </div>
 
   <p class="hint toolhint">
-    <b>一键更新</b>是自动流程（采集 → 检测 → 复核 → 测下载速度），每天也会定时自动跑一次；
+    <b>一键更新</b>是自动流程（采集 → 检测 → 复核 → 测下载速度），后台还会按「定时任务」页设的时间自动跑；
     后面几个是你手动触发的单步操作。<b>快速检测</b>只连 TCP 看端口通不通，几秒钟扫完，不改可用状态；
     <b>深度检测</b>会真的发 HTTP 请求，通过才算可用；<b>测下载速度</b>是最后一档筛查，
     真的跑一遍下载，测出速度的才算能承载流量（费流量，只测延迟最好的那几十个）。
@@ -265,6 +270,7 @@ td.sel input, th.sel input{margin:0;cursor:pointer;accent-color:var(--accent)}
     <button class="tab" data-tab="node">可用节点</button>
     <button class="tab" data-tab="long">长期可用</button>
     <button class="tab" data-tab="sub">订阅链接</button>
+    <button class="tab" data-tab="sched">定时任务</button>
   </div>
 
   <!-- 日志 -->
@@ -470,6 +476,47 @@ td.sel input, th.sel input{margin:0;cursor:pointer;accent-color:var(--accent)}
     <p class="hint" id="subNote" style="margin:11px 0 0"></p>
   </section>
 
+  <!-- 定时任务 -->
+  <section class="panel" id="panel-sched">
+    <div class="headline">
+      <b>后台自动更新</b>
+      <span class="hint" id="schedState" style="margin:0">加载中…</span>
+    </div>
+    <p class="hint">
+      这里决定后台什么时候自动跑一次完整流程（采集 → 检测 → 复核 → 测速）。
+      系统每 10 分钟问一次「到点没有」：没到点 0.2 秒就退出，到点才真跑。
+      <b>改完立刻生效</b>，不用重启服务、不用 root。
+    </p>
+
+    <div class="filters">
+      <label class="f"><input type="checkbox" id="schedOn"> 启用自动更新</label>
+      <span class="spacer"></span>
+      <span class="hint" style="margin:0" id="schedTimer">定时器状态检查中…</span>
+    </div>
+
+    <div class="filters">
+      <div class="seg" id="segSchedMode">
+        <button class="on" data-mode="daily">每天定时</button>
+        <button data-mode="interval">每隔几小时</button>
+      </div>
+      <span id="wrapAt"><label class="f">时间 <input type="time" id="schedAt" value="04:17"></label></span>
+      <span id="wrapEvery" style="display:none">
+        <label class="f">每 <input type="number" class="numin" id="schedEvery"
+          min="1" max="168" step="1" value="6" style="width:72px"> 小时跑一次</label>
+      </span>
+      <span class="spacer"></span>
+      <button class="primary sm" id="btnSchedSave">保存</button>
+    </div>
+
+    <div class="filters" style="gap:20px">
+      <span class="hint" style="margin:0">上次运行 <b id="schedLast">-</b></span>
+      <span class="hint" style="margin:0">下次运行 <b id="schedNext">-</b></span>
+      <span class="hint" style="margin:0" id="schedDur"></span>
+    </div>
+
+    <p class="hint" id="schedNote" style="margin:0"></p>
+  </section>
+
   <div id="toast"></div>
 </div>
 
@@ -480,7 +527,8 @@ const $ = (id) => document.getElementById(id);
 const S = { seq: 0, es: null, running: false, startedAt: 0, tab: "log",
             nodes: [], srcRows: [], srcKey: "rate", srcDir: -1, tick: null,
             longDays: 3, longRows: [], longOldest: 0, longCounts: {},
-            subAge: 0, subTier: "alive", subInfo: null, sel: new Set() };
+            subAge: 0, subTier: "alive", subInfo: null, sel: new Set(),
+            schedMode: "daily" };
 
 const nf = (n) => (n == null ? "-" : Number(n).toLocaleString("zh-CN"));
 
@@ -939,7 +987,74 @@ function setTab(name) {
   if (name === "node") loadNodes();
   if (name === "long") loadLong();
   if (name === "sub") loadSub();
+  if (name === "sched") loadSchedule();
 }
+
+/* ---------------- 定时任务 ---------------- */
+
+function setSchedMode(mode) {
+  S.schedMode = mode === "interval" ? "interval" : "daily";
+  document.querySelectorAll("#segSchedMode button").forEach((b) =>
+    b.classList.toggle("on", b.dataset.mode === S.schedMode));
+  $("wrapAt").style.display = S.schedMode === "daily" ? "" : "none";
+  $("wrapEvery").style.display = S.schedMode === "interval" ? "" : "none";
+}
+
+function renderSchedule(d) {
+  if (!d || !d.sched) return;
+  const s = d.sched;
+  $("schedOn").checked = !!s.enabled;
+  if (s.at) $("schedAt").value = s.at;
+  if (s.every_hours) $("schedEvery").value = s.every_hours;
+  setSchedMode(s.mode);
+
+  $("schedState").textContent = s.enabled ? d.desc : "已暂停（不会自动跑）";
+  $("schedState").style.color = s.enabled ? "" : "var(--muted)";
+  $("schedLast").textContent = d.last_text || "-";
+  $("schedNext").textContent = d.next_text || "-";
+  $("schedDur").textContent = d.last_dur ? "（上次耗时 " + Math.round(d.last_dur) + "s）" : "";
+
+  // 上次到底成没成，得说清楚，不然「跑过了」和「跑成功了」分不清
+  const note = [];
+  if (d.last_ok === false) note.push("⚠ 上次运行失败（返回码 " + (d.last_rc ?? "-") + "），看「运行日志」页排查。");
+  else if (d.last_ok === true) note.push("上次运行成功。");
+  if (d.timer && d.timer.active && d.timer.active !== "active")
+    note.push("定时器当前不是运行状态，排期不会生效：systemctl start nodehub-update.timer");
+  $("schedNote").textContent = note.join(" ");
+  $("schedTimer").textContent = (d.timer && d.timer.text) || "定时器状态未知";
+}
+
+async function loadSchedule() {
+  try {
+    renderSchedule(await api("/api/schedule"));
+  } catch (e) {
+    $("schedState").textContent = "读取失败：" + e.message;
+  }
+}
+
+document.querySelectorAll("#segSchedMode button").forEach((b) => {
+  b.onclick = () => setSchedMode(b.dataset.mode);
+});
+
+$("btnSchedSave").onclick = async () => {
+  const body = {
+    enabled: $("schedOn").checked,
+    mode: S.schedMode,
+    at: $("schedAt").value || "04:17",
+    every_hours: Number($("schedEvery").value) || 6,
+  };
+  try {
+    const d = await api("/api/schedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    renderSchedule(d);
+    toast(body.enabled ? "已保存：" + d.desc : "已暂停自动更新");
+  } catch (e) {
+    toast("保存失败：" + e.message, 4000);
+  }
+};
 
 /* ---------------- 绑定 ---------------- */
 

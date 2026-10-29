@@ -3375,3 +3375,48 @@ sources:
   note: TG 频道，网页版直接抓（tg_scan 发现，5 条）
   tags:
   - telegram
+- id: alvin9999-pac2-xray
+  url: https://gitlab.com/free9999/ipupdate/-/raw/master/xray/config.json
+  kind: site
+  status: candidate
+  format: config-json
+  yield: 1
+  types:
+  - vmess
+  freq: daily
+  last_verified: '2026-10-29'
+  note: 服务端 xray 启动配置（不是订阅），vmess 走 Cloudflare CDN。上游 GitHub 仓库 Alvin9999/pac2 已删除，只剩 GitLab 与自建镜像
+  tags:
+  - config-json
+  - low-yield
+  reach: both
+- id: alvin9999-pac2-hysteria2
+  url: https://gitlab.com/free9999/ipupdate/-/raw/master/hysteria2/config.json
+  kind: site
+  status: candidate
+  format: config-json
+  yield: 1
+  types:
+  - hysteria2
+  freq: daily
+  last_verified: '2026-10-29'
+  note: hysteria2 独立配置，单节点（Scaleway IPv6）。同目录下 /1 /2 是另外几个节点
+  tags:
+  - config-json
+  - low-yield
+  reach: both
+- id: alvin9999-pac2-hysteria2-2
+  url: https://gitlab.com/free9999/ipupdate/-/raw/master/hysteria2/2/config.json
+  kind: site
+  status: candidate
+  format: config-json
+  yield: 1
+  types:
+  - hysteria2
+  freq: daily
+  last_verified: '2026-10-29'
+  note: 同上，另一台 IPv6 节点
+  tags:
+  - config-json
+  - low-yield
+  reach: both

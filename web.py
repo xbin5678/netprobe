@@ -26,6 +26,8 @@
     POST /api/run             启动流水线  {"cmd":"all","extra":["--limit","500"]}
     POST /api/stop            中断
     POST /api/sub/reset       换一个新的订阅密钥（旧链接立刻失效）
+    GET  /api/schedule        后台任务排期 + systemd timer 状态
+    POST /api/schedule        改排期 {enabled,mode,at,every_hours}
 """
 from __future__ import annotations
 
@@ -52,7 +54,7 @@ sys.path.insert(0, ROOT)
 
 import yaml  # noqa: E402
 
-from nodehub import exporter, probe as probedb, yamlutil  # noqa: E402
+from nodehub import exporter, probe as probedb, schedule, yamlutil  # noqa: E402
 from nodehub.config import load_config, source_meta  # noqa: E402
 from nodehub.lock import holder as lock_holder  # noqa: E402
 from nodehub.progress import parse as parse_progress  # noqa: E402
@@ -434,6 +436,49 @@ class App:
         self.sub_key = self._write_sub_key(secrets.token_urlsafe(12))
         self._sub_cache = None
         return self.sub_key
+
+    # ---- 后台任务排期
+    def schedule_info(self) -> dict:
+        """排期快照 + systemd timer 的实时状态。
+
+        timer 状态只是「显示用」：真到不到点由 run.py tick 自己算（读
+        data/schedule.json），所以即使这里拿不到 systemctl 的输出，
+        排期照常生效。
+        """
+        info = schedule.summary(ROOT)
+        info["timer"] = self._timer_state()
+        return info
+
+    def _timer_state(self) -> dict:
+        out = {"active": None, "enabled": None, "next": "", "text": "未知"}
+        try:
+            act = subprocess.run(["systemctl", "is-active", "nodehub-update.timer"],
+                                 capture_output=True, text=True, timeout=3)
+            out["active"] = (act.stdout or "").strip() or "unknown"
+            ena = subprocess.run(["systemctl", "is-enabled", "nodehub-update.timer"],
+                                 capture_output=True, text=True, timeout=3)
+            out["enabled"] = (ena.stdout or "").strip() or "unknown"
+        except Exception:
+            # 没装 systemd / 容器里跑，拿不到就当未知，不影响排期本身
+            return out
+        if out["active"] == "active":
+            out["text"] = "运行中（每 10 分钟检查一次）"
+        elif out["active"] in ("inactive", "failed"):
+            out["text"] = "未运行（排期不会生效，用 systemctl start nodehub-update.timer 打开）"
+        return out
+
+    def save_schedule(self, payload: dict) -> dict:
+        """网页上改排期。只认四个字段，其余一律忽略。"""
+        cur = schedule.load(ROOT)
+        data = {
+            "enabled": payload.get("enabled", cur.get("enabled")),
+            "mode": payload.get("mode", cur.get("mode")),
+            "at": payload.get("at", cur.get("at")),
+            "every_hours": payload.get("every_hours", cur.get("every_hours")),
+        }
+        saved = schedule.save(ROOT, data)
+        log(f"排期已更新：{schedule.describe(saved)}")
+        return self.schedule_info()
 
     def sub_nodes(self, min_age: float = 0.0,
                   tier: str = "alive") -> tuple[list[dict], int, int]:
@@ -992,6 +1037,8 @@ class Handler(BaseHTTPRequestHandler):
                     })
                 return self._json(200, {"text": text, "count": n,
                                         "skipped": skipped, "ext": ext})
+            if path == "/api/schedule":
+                return self._json(200, app.schedule_info())
             if path == "/api/status":
                 st = app.runner.status()
                 return self._json(200, {
@@ -1135,6 +1182,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"ok": self.app.runner.stop()})
             if path == "/api/sub/reset":
                 return self._json(200, {"ok": True, "key": self.app.reset_sub_key()})
+            if path == "/api/schedule":
+                return self._json(200, self.app.save_schedule(payload))
 
             # ---- 订阅测速
             if path == "/api/probe/fetch":

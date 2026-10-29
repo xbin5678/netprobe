@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import base64
 import json
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, unquote, urlparse, urlsplit
 
 # ---------------------------------------------------------------- 工具
 
@@ -505,6 +505,10 @@ def proxy_to_uri(p: dict) -> str:
     server, port = p.get("server"), p.get("port")
     if not server or not port:
         return ""
+    # IPv6 在 URI 里必须加方括号，否则 2001:db8::1:443 会被当成一串端口解析
+    host = str(server)
+    if ":" in host and not host.startswith("["):
+        host = f"[{host}]"
     if t == "vmess":
         j = {
             "v": "2", "ps": name, "add": server, "port": str(port),
@@ -549,7 +553,7 @@ def proxy_to_uri(p: dict) -> str:
                 q["host"] = h
         elif p.get("network") == "grpc":
             q["serviceName"] = (p.get("grpc-opts", {}) or {}).get("grpc-service-name", "")
-        return f"vless://{p.get('uuid','')}@{server}:{port}?{urlencode(q)}#{name}"
+        return f"vless://{p.get('uuid','')}@{host}:{port}?{urlencode(q)}#{name}"
 
     if t == "trojan":
         from urllib.parse import urlencode
@@ -560,13 +564,13 @@ def proxy_to_uri(p: dict) -> str:
             q["type"] = p["network"]
         from urllib.parse import quote
         pwd = quote(str(p.get("password", "")), safe="")
-        return f"trojan://{pwd}@{server}:{port}?{urlencode(q)}#{name}"
+        return f"trojan://{pwd}@{host}:{port}?{urlencode(q)}#{name}"
 
     if t == "ss":
         userinfo = base64.b64encode(
             f"{p.get('cipher','')}:{p.get('password','')}".encode()
         ).decode().rstrip("=")
-        return f"ss://{userinfo}@{server}:{port}#{name}"
+        return f"ss://{userinfo}@{host}:{port}#{name}"
 
     if t == "ssr":
         from urllib.parse import urlencode
@@ -599,6 +603,230 @@ def proxy_to_uri(p: dict) -> str:
         # 密码里可能有 :// 这类字符，不转义会把 URI 结构撑坏
         from urllib.parse import quote
         pwd = quote(str(p.get("password", "")), safe="")
-        return f"hysteria2://{pwd}@{server}:{port}?{urlencode(q)}#{name}"
+        return f"hysteria2://{pwd}@{host}:{port}?{urlencode(q)}#{name}"
 
     return ""
+
+
+# ---------------------------------------------------------------- 服务端 config.json -> proxy
+#
+# 有一类源给的不是订阅，而是**客户端启动配置**（xray/sing-box 的 config.json）。
+# 这种文件里 outbounds 才是真正的出口节点，通常一条配置只含一个节点，
+# 所以要逐条抽出来再当普通节点走后面的流程。
+
+
+def _hostport(s, default_port: int = 0):
+    """拆 `host:port` / `[v6]:port`。IPv6 必须带方括号，否则冒号会数错。"""
+    s = str(s or "").strip()
+    if not s:
+        return "", 0
+    try:
+        u = urlsplit("//" + s)
+        if u.hostname:
+            return u.hostname, _int(u.port) or default_port
+    except Exception:
+        pass
+    if s.count(":") == 1:
+        h, _, po = s.partition(":")
+        return h, _int(po) or default_port
+    return s, default_port
+
+
+def _apply_stream(p: dict, st) -> bool:
+    """xray 的 streamSettings -> clash 的 network / tls 字段。返回 False 表示不支持。"""
+    if not isinstance(st, dict):
+        return True
+    net = str(st.get("network") or "tcp").lower()
+    if net == "ws":
+        ws = st.get("wsSettings") or {}
+        opts = {"path": ws.get("path") or "/"}
+        host = (ws.get("headers") or {}).get("Host")
+        if host:
+            opts["headers"] = {"Host": host}
+        p["network"] = "ws"
+        p["ws-opts"] = opts
+    elif net == "grpc":
+        gr = st.get("grpcSettings") or {}
+        p["network"] = "grpc"
+        p["grpc-opts"] = {"grpc-service-name": gr.get("serviceName") or ""}
+    elif net in ("tcp", "raw"):
+        p["network"] = "tcp"
+    else:
+        # h2 / xhttp / kcp 这些 clash 支持得七零八落，放弃单条比拖垮整份配置好
+        return False
+
+    sec = str(st.get("security") or "").lower()
+    if sec == "reality":
+        r = st.get("realitySettings") or {}
+        p["tls"] = True
+        if r.get("serverName"):
+            p["servername"] = r["serverName"]
+        p["reality-opts"] = {
+            "public-key": r.get("publicKey") or "",
+            "short-id": r.get("shortId") or "",
+        }
+        if r.get("fingerprint"):
+            p["client-fingerprint"] = r["fingerprint"]
+    elif sec in ("tls", "xtls"):
+        t = st.get("tlsSettings") or {}
+        p["tls"] = True
+        if t.get("serverName"):
+            p["servername"] = t["serverName"]
+    return True
+
+
+def _from_xray(ob: dict):
+    """xray / v2ray 的 outbound -> clash proxy。"""
+    proto = str(ob.get("protocol") or "").lower()
+    settings = ob.get("settings") or {}
+    tag = str(ob.get("tag") or "")
+
+    if proto in ("vmess", "vless"):
+        vnext = (settings.get("vnext") or [{}])[0]
+        user = (vnext.get("users") or [{}])[0]
+        server = str(vnext.get("address") or "")
+        port = _int(vnext.get("port"))
+        uuid = str(user.get("id") or "")
+        if not (server and port and uuid):
+            return None
+        p = {"name": tag, "type": proto, "server": server, "port": port,
+             "uuid": uuid, "udp": True, "skip-cert-verify": True}
+        if proto == "vmess":
+            p["alterId"] = _int(user.get("alterId"))
+            p["cipher"] = str(user.get("security") or "auto")
+        if user.get("flow"):
+            p["flow"] = user["flow"]
+    elif proto == "trojan":
+        srv = (settings.get("servers") or [{}])[0]
+        server = str(srv.get("address") or "")
+        port = _int(srv.get("port"))
+        pwd = str(srv.get("password") or "")
+        if not (server and port and pwd):
+            return None
+        p = {"name": tag, "type": "trojan", "server": server, "port": port,
+             "password": pwd, "udp": True, "skip-cert-verify": True}
+    elif proto in ("shadowsocks", "ss"):
+        srv = (settings.get("servers") or [{}])[0]
+        server = str(srv.get("address") or "")
+        port = _int(srv.get("port"))
+        pwd = str(srv.get("password") or "")
+        method = str(srv.get("method") or "")
+        if not (server and port and pwd and method):
+            return None
+        p = {"name": tag, "type": "ss", "server": server, "port": port,
+             "password": pwd, "cipher": method, "udp": True}
+    else:
+        return None
+
+    return p if _apply_stream(p, ob.get("streamSettings")) else None
+
+
+_SINGBOX_TYPES = {
+    "vmess": "vmess",
+    "vless": "vless",
+    "trojan": "trojan",
+    "shadowsocks": "ss",
+    "hysteria2": "hysteria2",
+}
+
+
+def _from_singbox(ob: dict):
+    """sing-box 的 outbound -> clash proxy。"""
+    clash_type = _SINGBOX_TYPES.get(str(ob.get("type") or "").lower())
+    if not clash_type:
+        # hysteria(v1) / wireguard / tuic 这些 clash 内核没有，跳过
+        return None
+    server = str(ob.get("server") or "")
+    port = _int(ob.get("server_port") or ob.get("port"))
+    if not (server and port):
+        return None
+    p = {"name": str(ob.get("tag") or ""), "type": clash_type,
+         "server": server, "port": port, "udp": True, "skip-cert-verify": True}
+
+    if clash_type in ("vmess", "vless"):
+        p["uuid"] = str(ob.get("uuid") or "")
+        if clash_type == "vmess":
+            p["alterId"] = _int(ob.get("alter_id"))
+            p["cipher"] = str(ob.get("security") or "auto")
+        if ob.get("flow"):
+            p["flow"] = ob["flow"]
+    elif clash_type == "trojan":
+        p["password"] = str(ob.get("password") or "")
+    elif clash_type == "hysteria2":
+        p["password"] = str(ob.get("password") or ob.get("auth") or "")
+    elif clash_type == "ss":
+        p["password"] = str(ob.get("password") or "")
+        p["cipher"] = str(ob.get("method") or "")
+
+    tls = ob.get("tls") or {}
+    if isinstance(tls, dict) and tls.get("enabled"):
+        p["tls"] = True
+        sni = tls.get("server_name") or ""
+        if sni:
+            # clash 里 hysteria2 用 sni，其它协议用 servername
+            p["sni" if clash_type == "hysteria2" else "servername"] = sni
+
+    transport = ob.get("transport") or {}
+    tt = str(transport.get("type") or "").lower()
+    if tt == "ws":
+        opts = {"path": transport.get("path") or "/"}
+        host = (transport.get("headers") or {}).get("Host")
+        if host:
+            opts["headers"] = {"Host": host}
+        p["network"] = "ws"
+        p["ws-opts"] = opts
+    elif tt == "grpc":
+        p["network"] = "grpc"
+        p["grpc-opts"] = {"grpc-service-name": transport.get("service_name") or ""}
+    return p
+
+
+def _from_hysteria2_config(doc: dict):
+    """hysteria2 独立配置文件：顶层直接就是 server / auth / tls。"""
+    server, port = _hostport(doc.get("server"))
+    pwd = str(doc.get("auth") or doc.get("password") or "")
+    if not (server and port and pwd):
+        return None
+    p = {"name": str(doc.get("name") or ""), "type": "hysteria2", "server": server,
+         "port": port, "password": pwd, "udp": True, "skip-cert-verify": True}
+    tls = doc.get("tls") or {}
+    if isinstance(tls, dict):
+        sni = tls.get("sni") or tls.get("server_name")
+        if sni:
+            p["sni"] = sni
+    return p
+
+
+def parse_config_json(text: str) -> list[dict]:
+    """解析服务端 config.json（xray / sing-box / hysteria2），转成 clash proxy。
+
+    这类源给的是客户端启动配置而不是订阅，一条文件通常只有一个出口节点。
+    clash 内核不支持的协议（hysteria v1、wireguard 等）直接丢掉，
+    否则 mihomo 加载整份配置会失败。
+    """
+    t = (text or "").lstrip()
+    if not t.startswith("{"):
+        return []
+    try:
+        doc = json.loads(t)
+    except Exception:
+        return []
+    if not isinstance(doc, dict):
+        return []
+
+    raw = []
+    obs = doc.get("outbounds")
+    if isinstance(obs, list):
+        for ob in obs:
+            if not isinstance(ob, dict):
+                continue
+            p = _from_xray(ob) if ob.get("protocol") else _from_singbox(ob)
+            if p:
+                raw.append(p)
+    if not raw:
+        p = _from_hysteria2_config(doc)
+        if p:
+            raw.append(p)
+
+    return [p for p in (normalize_clash_proxy(x) for x in raw) if p]
+
