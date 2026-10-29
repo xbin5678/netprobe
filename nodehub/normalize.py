@@ -60,6 +60,18 @@ SSR_OBFS = {"plain", "http_simple", "http_post", "random_head",
             "tls1.2_ticket_auth", "tls1.2_ticket_fastauth"}
 
 # mihomo 认的传输层。raw 是 xray 对 tcp 的叫法，映射过来。
+#
+# httpupgrade 这里**故意保持原样**，别再改回 "http"。原来看名字相近就映射成
+# http，其实是两种完全不同的协议（http 是 HTTP 伪装隧道，httpupgrade 是
+# WebSocket 的 Upgrade 变体），改过去等于凭空把节点变成另一种东西。
+#
+# 实测（本地裸 TCP 端口抓 mihomo 拨过来的前 120 字节，内核 v1.19.33）：
+#   network=http         -> "GET /sniff HTTP/1.1"          真 HTTP 伪装
+#   network=xhttp        -> "PRI * HTTP/2.0 ..."            真 HTTP/2
+#   network=httpupgrade  -> \x00\x0b>\x0b...（vless 二进制头）  静默退回裸 tcp
+# 也就是说这个内核压根没有 httpupgrade 实现（二进制里搜不到这个字符串），
+# 配置能加载、不报错，但实际按 tcp 拨号，节点必然连不上。留着原值的好处是
+# 不伪造数据：检测自然淘汰它，将来内核支持了也不用改库。
 NET_ALIAS = {
     "raw": "tcp",
     "tcp": "tcp",
@@ -70,7 +82,7 @@ NET_ALIAS = {
     "h2c": "h2",
     "xhttp": "xhttp",
     "splithttp": "xhttp",
-    "httpupgrade": "http",
+    "httpupgrade": "httpupgrade",
 }
 # clash 内核压根不支持这些传输，留着只会报错
 NET_DROP = {"kcp", "mkcp", "quic", "gun", "meek"}
@@ -80,6 +92,12 @@ FLOW_OK = {"", "xtls-rprx-vision"}
 FLOW_ALIAS = {"xtls-rprx-vision-udp443": "xtls-rprx-vision"}
 
 ALPN_OK = {"h2", "http/1.1", "h3"}
+
+# uTLS 指纹白名单，跟内核认的那一套一致。库里混进来过 "unsafe"（257 个）、
+# "chrom…" / "c..." 这种被截断的垃圾值，写进去内核只会打一行
+# `wrong clientFingerprint` 然后忽略，等于没写——不如干脆不写，让它走默认。
+FP_OK = {"chrome", "firefox", "safari", "ios", "android", "edge",
+         "360", "qq", "random", "randomized"}
 
 _UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 _HEX_RE = re.compile(r"^[0-9a-f]+$")
@@ -238,7 +256,7 @@ def sanitize(p: dict) -> dict | None:
         if net in NET_DROP:
             return None                      # clash 内核不支持，测也测不了
         net = NET_ALIAS.get(net, net)
-        if net not in ("tcp", "ws", "grpc", "h2", "http", "xhttp"):
+        if net not in ("tcp", "ws", "grpc", "h2", "http", "xhttp", "httpupgrade"):
             net = "tcp"
         out["network"] = net
         if net == "ws":
@@ -279,6 +297,37 @@ def sanitize(p: dict) -> dict | None:
                 if clean:
                     hto["headers"] = clean
             out["http-opts"] = hto
+        elif net == "xhttp":
+            # xhttp 必须带 opts：实测同一个节点，给 xhttp-opts 内核会正常拨号
+            # 并发出 HTTP/2；一个字段都不给，连拨号都不会发起（监听端 10 秒
+            # 收不到一个字节）。库里 111 个 xhttp 节点只有 39 个带 opts，
+            # 以前这里整段丢掉，等于把这 111 个全部判死。
+            # 值一律转成字符串：源里给数组/数字会让整份配置加载失败
+            # （内核是全有或全无，一条坏就整批不加载）。
+            o = q.get("xhttp-opts") if isinstance(q.get("xhttp-opts"), dict) else {}
+            path = (_as_str_list(o.get("path")) or ["/"])[0]
+            xo: dict = {"path": path if path.startswith("/") else "/" + path}
+            host = str(o.get("host") or "").strip().lower()
+            if host and _HOST_OK.match(host):
+                xo["host"] = host
+            mode = str(o.get("mode") or "").strip().lower()
+            if mode in ("auto", "packet-up", "stream-up", "stream-one"):
+                xo["mode"] = mode
+            hd = o.get("headers")
+            if isinstance(hd, dict):
+                clean = {str(k): str(v) for k, v in hd.items()
+                         if str(k).strip() and str(v).strip()}
+                if clean:
+                    xo["headers"] = clean
+            out["xhttp-opts"] = xo
+
+        # UDP 的封装方式，内核有 `packet-encoding` 这个字段（只认这两个值）。
+        # 源里常写成 xudp，以前连它一起丢掉，xhttp/ws 上的 UDP 就走默认，
+        # 这类节点测速和实际使用都受影响。
+        if t in ("vmess", "vless"):
+            pe = str(q.get("packet-encoding") or "").strip().lower()
+            if pe in ("packetaddr", "xudp"):
+                out["packet-encoding"] = pe
 
     # ---- TLS
     if t in ("vmess", "vless", "trojan", "hysteria2", "tuic"):
@@ -302,7 +351,7 @@ def sanitize(p: dict) -> dict | None:
         if alpn:
             out["alpn"] = alpn
         fp = str(q.get("client-fingerprint") or "").strip().lower()
-        if fp:
+        if fp in FP_OK:
             out["client-fingerprint"] = fp
 
     if t == "vless":
