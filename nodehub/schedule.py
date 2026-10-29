@@ -40,6 +40,12 @@ DEFAULTS = {
 # 这里只是兜底：万一状态文件写失败，也别一分钟内连跑十遍。
 MIN_GAP = 120.0
 
+# 上次跑失败 / 被重启打断时，隔多久重试一次（不是等到明天）。
+# 不这么做的话，凌晨那次要是崩了（比如内核没下下来），机器看起来就像卡住了，
+# 得等到第二天才再试一次。重试次数有上限，免得一直崩一直重试。
+RETRY_GAP = 1800.0
+RETRY_MAX = 3
+
 HOURS_MIN, HOURS_MAX = 1, 168
 
 
@@ -145,6 +151,12 @@ def mark_end(root: str, ok: bool, rc: int = 0, ts: float | None = None) -> None:
     st["last_ok"] = bool(ok)
     st["last_rc"] = int(rc)
     st["running"] = False
+    # 连续失败计数：成功清零，失败加一，用来决定还值不值得重试
+    try:
+        streak = int(st.get("fail_streak") or 0)
+    except (TypeError, ValueError):
+        streak = 0
+    st["fail_streak"] = 0 if ok else streak + 1
     start = float(st.get("last_start") or 0)
     if start > 0 and end >= start:
         st["last_dur"] = round(end - start, 1)
@@ -157,6 +169,17 @@ def next_run(sched: dict, state: dict, now_ts: float | None = None) -> float | N
         return None
     now_ts = time.time() if now_ts is None else float(now_ts)
     last = float(state.get("last_start") or 0)
+    end = float(state.get("last_end") or 0)
+
+    # 上次没跑完（进程被 kill / 机器重启，finally 没跑到）或者跑失败了：
+    # 隔 30 分钟重试，而不是傻等到下一个排期点。连续失败 3 次就放弃，
+    # 回到正常排期——一直崩一直重试只会把日志刷满。
+    try:
+        streak = int(state.get("fail_streak") or 0)
+    except (TypeError, ValueError):
+        streak = 0
+    if last > 0 and (end < last or state.get("last_ok") is False) and streak < RETRY_MAX:
+        return last + RETRY_GAP
 
     if sched.get("mode") == "interval":
         if last <= 0:
@@ -214,14 +237,6 @@ def summary(root: str, now_ts: float | None = None) -> dict:
     sched = load(root)
     state = load_state(root)
     nxt = next_run(sched, state, now_ts)
-    if not sched.get("enabled"):
-        next_text = "暂停中"
-    elif nxt is not None and nxt <= now_ts:
-        # 从没跑过、或者已经过了点还没被 tick 叫醒：别显示一个过去的时间，
-        # 那会让人以为任务卡住了
-        next_text = "即将运行（10 分钟内）"
-    else:
-        next_text = _fmt_ts(nxt)
 
     # 状态文件里的 running 只代表「上次记过开始、还没记结束」。进程被
     # kill -9 或者机器重启时，finally 跑不到，这个标记会一直停在 true。
@@ -234,6 +249,16 @@ def summary(root: str, now_ts: float | None = None) -> dict:
         except Exception:
             pass
 
+    if not sched.get("enabled"):
+        next_text = "暂停中"
+    elif running:
+        next_text = "正在运行…"
+    elif nxt is not None and nxt <= now_ts:
+        # 从没跑过、或者已经过了点还没被 tick 叫醒：别显示一个过去的时间，
+        # 那会让人以为任务卡住了
+        next_text = "即将运行（10 分钟内）"
+    else:
+        next_text = _fmt_ts(nxt)
     return {
         "sched": sched,
         "desc": describe(sched),

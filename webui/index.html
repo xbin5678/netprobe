@@ -1016,7 +1016,8 @@ function renderSchedule(d) {
 
   // 上次到底成没成，得说清楚，不然「跑过了」和「跑成功了」分不清
   const note = [];
-  if (d.last_ok === false) note.push("⚠ 上次运行失败（返回码 " + (d.last_rc ?? "-") + "），看「运行日志」页排查。");
+  if (d.last_ok === false) note.push("⚠ 上次运行失败（返回码 " + (d.last_rc ?? "-") +
+    "），30 分钟后会自动重试（连续失败 3 次后改回正常排期）；先看「运行日志」页排查。");
   else if (d.last_ok === true) note.push("上次运行成功。");
   if (d.timer && d.timer.active && d.timer.active !== "active")
     note.push("定时器当前不是运行状态，排期不会生效：systemctl start nodehub-update.timer");
