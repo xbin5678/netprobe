@@ -20,7 +20,6 @@ import re
 import socket
 import subprocess
 import sys
-import threading
 import time
 from urllib.parse import urljoin, urlsplit
 

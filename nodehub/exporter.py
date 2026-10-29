@@ -7,7 +7,6 @@ import os
 import time
 from urllib.parse import quote
 
-import yaml
 
 from . import normalize, yamlutil
 from .parser import proxy_to_uri
