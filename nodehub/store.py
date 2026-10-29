@@ -135,6 +135,15 @@ class Store:
             except Exception:
                 pass
 
+            # checks 是纯留档表（代码里没有任何地方读它），但写入量最大：
+            # 每个节点每次检测都插一行。没有索引的话，以后想按 fp 查历史
+            # 就是全表扫描；配合 prune() 里的定期清理才不会被撑爆。
+            try:
+                c.execute("CREATE INDEX IF NOT EXISTS idx_checks_fp ON checks(fp)")
+                c.execute("CREATE INDEX IF NOT EXISTS idx_checks_ts ON checks(ts)")
+            except Exception:
+                pass
+
     @contextmanager
     def _conn(self):
         conn = sqlite3.connect(self.path, timeout=30)
@@ -176,7 +185,10 @@ class Store:
                     continue
                 fp = fingerprint(p)
                 p = dict(p)
-                p.pop("name", None)  # 原始名可能含特殊字符，展示名单独存
+                # 先留住原始名：下面要把它从 clash 字典里摘掉（订阅源的名字里
+                # 常带表情和竖线，塞进配置没意义），但库里得留一份给界面看。
+                disp_name = (p.get("name") or "").strip() or f"{p.get('server')}:{p.get('port')}"
+                p.pop("name", None)
                 clash_json = json.dumps(p, ensure_ascii=False)
                 row = c.execute("SELECT fp, seen_count FROM nodes WHERE fp=?", (fp,)).fetchone()
                 if row:
@@ -190,8 +202,7 @@ class Store:
                         """INSERT INTO nodes(fp,type,server,port,name,clash,first_seen,last_seen,seen_count)
                            VALUES(?,?,?,?,?,?,?,?,1)""",
                         (fp, p.get("type"), p.get("server"), p.get("port"),
-                         p.get("name") or f"{p.get('server')}:{p.get('port')}",
-                         clash_json, ts, ts),
+                         disp_name, clash_json, ts, ts),
                     )
                     added += 1
                 c.execute(
@@ -315,11 +326,19 @@ class Store:
             return 0
         cutoff = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time() - days * 86400))
         with self._conn() as c:
-            fps = [r["fp"] for r in c.execute("SELECT fp FROM nodes WHERE last_seen < ?", (cutoff,))]
-            for fp in fps:
-                c.execute("DELETE FROM nodes WHERE fp=?", (fp,))
-                c.execute("DELETE FROM node_sources WHERE fp=?", (fp,))
-            return len(fps)
+            n = c.execute("SELECT COUNT(*) FROM nodes WHERE last_seen < ?",
+                          (cutoff,)).fetchone()[0]
+            # 用子查询一次删完，别按行循环——3 万个节点时逐条 DELETE 能跑几分钟
+            c.execute("DELETE FROM node_sources WHERE fp IN "
+                      "(SELECT fp FROM nodes WHERE last_seen < ?)", (cutoff,))
+            c.execute("DELETE FROM nodes WHERE last_seen < ?", (cutoff,))
+            # checks 没人读，但每个节点每次检测都写一行：不清的话一天几万行，
+            # 小硬盘 VPS 上几个月就能把库撑到几百 MB。
+            try:
+                c.execute("DELETE FROM checks WHERE ts < ?", (cutoff,))
+            except Exception:
+                pass
+            return int(n)
 
     # 三档筛查，对应订阅页上能选的三档
     TIERS = ("alive", "speed", "tcp")
@@ -348,7 +367,12 @@ class Store:
             order = " ORDER BY latency ASC"
         args: list = []
         if max_latency:
-            q += " AND latency IS NOT NULL AND latency<=?"
+            # tcp 档的节点大多只有 TCP 耗时、没有真实延迟（latency 为 NULL），
+            # 拿 latency 过滤会把它们整批滤掉——那正是这一档存在的意义。
+            if tier == "tcp":
+                q += " AND COALESCE(tcp_ms, latency, 0) <= ?"
+            else:
+                q += " AND latency IS NOT NULL AND latency<=?"
             args.append(max_latency)
         if min_age_days > 0:
             cutoff = time.strftime("%Y-%m-%d %H:%M:%S",

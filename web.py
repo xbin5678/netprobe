@@ -838,13 +838,21 @@ class Handler(BaseHTTPRequestHandler):
         tok = self.app.token
         if not tok:
             return True
-        if (qs.get("token") or [""])[0] == tok:
+
+        def same(a: str) -> bool:
+            # 定长比较，别用 == 给计时攻击留口子；非 ASCII 直接判失败
+            try:
+                return hmac.compare_digest(a, tok)
+            except TypeError:
+                return False
+
+        if same((qs.get("token") or [""])[0]):
             return True
-        if (self.headers.get("X-Token") or "") == tok:
+        if same(self.headers.get("X-Token") or ""):
             return True
         for part in (self.headers.get("Cookie") or "").split(";"):
             k, _, v = part.strip().partition("=")
-            if k == "nh" and v == tok:
+            if k == "nh" and same(v):
                 return True
         return False
 

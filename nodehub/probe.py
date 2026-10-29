@@ -22,7 +22,7 @@ import subprocess
 import sys
 import threading
 import time
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 import requests
 import yaml
@@ -86,34 +86,47 @@ def _check_url(url: str) -> str:
 
 
 def fetch_sub(url: str, timeout: int = 25) -> tuple[str, str]:
-    """返回 (正文, 最终地址)。"""
+    """返回 (正文, 最终地址)。
+
+    跳转自己跟，不用 requests 的 allow_redirects：_check_url 只校验了第一次
+    的地址，如果让它自动跟随，一个公网域名 302 到 127.0.0.1 / 169.254.169.254
+    就绕过了整套内网拦截。每一跳都重新校验才安全。
+    """
     url = _check_url(url)
     headers = {
         # 不带 UA 的话，不少机场会返回一个空订阅或者 403
         "User-Agent": UA,
         "Accept": "*/*",
     }
-    try:
-        with requests.get(url, headers=headers, timeout=timeout,
-                          stream=True, allow_redirects=True) as r:
-            if r.status_code != 200:
-                raise ProbeError(f"订阅返回 HTTP {r.status_code}")
-            buf = bytearray()
-            for chunk in r.iter_content(65536):
-                buf += chunk
-                if len(buf) > SUB_MAX:
-                    raise ProbeError(f"订阅内容超过 {SUB_MAX >> 20}MB，不像订阅文件")
-            return bytes(buf).decode("utf-8", "replace"), r.url
-    except ProbeError:
-        raise
-    except requests.exceptions.SSLError:
-        raise ProbeError("订阅站点证书有问题（自签或过期）")
-    except requests.exceptions.Timeout:
-        raise ProbeError("拉取订阅超时，检查地址或网络")
-    except requests.exceptions.ConnectionError:
-        raise ProbeError("连不上订阅地址，可能被墙或域名写错")
-    except Exception as e:
-        raise ProbeError(f"拉取失败：{type(e).__name__}")
+    for _hop in range(4):
+        try:
+            with requests.get(url, headers=headers, timeout=timeout,
+                              stream=True, allow_redirects=False) as r:
+                if r.status_code in (301, 302, 303, 307, 308):
+                    loc = (r.headers.get("Location") or "").strip()
+                    if not loc:
+                        raise ProbeError(f"订阅返回 {r.status_code} 但没给跳转地址")
+                    url = _check_url(urljoin(url, loc))
+                    continue
+                if r.status_code != 200:
+                    raise ProbeError(f"订阅返回 HTTP {r.status_code}")
+                buf = bytearray()
+                for chunk in r.iter_content(65536):
+                    buf += chunk
+                    if len(buf) > SUB_MAX:
+                        raise ProbeError(f"订阅内容超过 {SUB_MAX >> 20}MB，不像订阅文件")
+                return bytes(buf).decode("utf-8", "replace"), url
+        except ProbeError:
+            raise
+        except requests.exceptions.SSLError:
+            raise ProbeError("订阅站点证书有问题（自签或过期）")
+        except requests.exceptions.Timeout:
+            raise ProbeError("拉取订阅超时，检查地址或网络")
+        except requests.exceptions.ConnectionError:
+            raise ProbeError("连不上订阅地址，可能被墙或域名写错")
+        except Exception as e:
+            raise ProbeError(f"拉取失败：{type(e).__name__}")
+    raise ProbeError("订阅跳转次数太多（超过 4 次），检查地址")
 
 
 # ---------------------------------------------------------------- 解析

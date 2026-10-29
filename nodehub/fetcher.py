@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import re
+import socket
 import threading
 from concurrent.futures import ThreadPoolExecutor
 

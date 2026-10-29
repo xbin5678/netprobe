@@ -556,9 +556,12 @@ def main():
         # 否则可用列表会一直停在上次的结果上，死掉的节点永远筛不掉。
         if not args.no_real and do_verify and not args.no_verify:
             cmd_verify(cfg, store, args.limit)
-        # 最终筛查放在最后：前面的两档把范围缩到几十个，这一步才跑得动
+        # 最终筛查放在最后：前面的两档把范围缩到几十个，这一步才跑得动。
+        # 注意别把 --limit 传进来：--limit 是「这次检测多少个节点」，
+        # 一旦串到测速这边，--limit 1000 就会变成 1000×10MB ≈ 10GB 流量。
+        # 测速数量只认 config 里的 check.speed.count。
         if not args.no_real and not args.no_speed:
-            cmd_speed(cfg, store, args.limit)
+            cmd_speed(cfg, store)
         cmd_summary(cfg, store, time.time() - t0)
         return
 

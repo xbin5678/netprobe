@@ -205,6 +205,7 @@ def _wait_api(port: int, timeout: float = 20.0) -> bool:
 
 
 def _test_one(name: str, port: int, urls: list[str], timeout_ms: int):
+    last = "timeout"
     for u in urls:
         try:
             r = requests.get(
@@ -221,12 +222,15 @@ def _test_one(name: str, port: int, urls: list[str], timeout_ms: int):
                     msg = r.json().get("message", "")[:80]
                 except Exception:
                     msg = f"HTTP {r.status_code}"
+                # 记下来：以前所有失败都报 timeout，配置写错（比如 cipher 不认）
+                # 也显示成超时，排查时完全看不出区别
+                last = msg or last
                 if "timeout" in msg.lower() or "refused" in msg.lower():
                     continue
         except Exception as e:
             last = type(e).__name__
             continue
-    return False, None, "timeout"
+    return False, None, last[:80]
 
 
 def _run_chunk(items: list[tuple[str, dict]], cfg: dict, root: str, exe: str,
