@@ -222,6 +222,18 @@ def summary(root: str, now_ts: float | None = None) -> dict:
         next_text = "即将运行（10 分钟内）"
     else:
         next_text = _fmt_ts(nxt)
+
+    # 状态文件里的 running 只代表「上次记过开始、还没记结束」。进程被
+    # kill -9 或者机器重启时，finally 跑不到，这个标记会一直停在 true。
+    # 所以以 run.lock 为准：锁没人持着，就一定没在跑。
+    running = bool(state.get("running"))
+    if running:
+        try:
+            from .lock import holder as _holder
+            running = _holder(os.path.join(root, "data", "run.lock")) is not None
+        except Exception:
+            pass
+
     return {
         "sched": sched,
         "desc": describe(sched),
@@ -231,7 +243,7 @@ def summary(root: str, now_ts: float | None = None) -> dict:
         "last_ok": state.get("last_ok"),
         "last_rc": state.get("last_rc"),
         "last_dur": state.get("last_dur"),
-        "running": bool(state.get("running")),
+        "running": running,
         "due_now": bool(nxt is not None and now_ts >= nxt),
         "now_text": _fmt_ts(now_ts),
     }
