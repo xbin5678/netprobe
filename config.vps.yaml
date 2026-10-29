@@ -1,0 +1,66 @@
+# VPS 专用配置（实测于 2 核 / 2GB / Debian 13）
+#
+# 实测数据（32,688 节点的库，一次 --full --limit 1200）：
+#   总耗时 2.5 分钟，CPU 22.8 秒，cgroup 峰值内存 131MB
+#   TCP 预筛 945/1198 通过（10 秒），真连测试 557 可用（84 秒）
+#
+# 用法：
+#   python run.py all --config config.vps.yaml
+#   python web.py --config config.vps.yaml
+#   或者 deploy/install.sh 会自动把它复制成 config.yaml
+#
+# ── 更小的机器怎么改 ─────────────────────────────────────────
+#   1 核 512MB：tcp.threads 40、real.threads 12、chunk 60、fetch.concurrency 3
+#   1 核 1GB  ：tcp.threads 80、real.threads 20、chunk 120、fetch.concurrency 6
+#   4 核 4GB  ：tcp.threads 300、real.threads 48、chunk 300、fetch.concurrency 16
+# 内存主要花在 chunk（一次灌给 mihomo 的节点数），不是总节点数。
+
+fetch:
+  timeout: 20
+  retries: 1
+  concurrency: 10         # 抓订阅源的并发；实测 10 已经能吃满百兆带宽
+  use_system_proxy: false
+  proxy: ''               # VPS 上一般没有本地代理，留空即可，TG 频道会自动跳过
+  use_proxy: false
+  mirrors:
+  - https://raw.githubusercontent.com/{path}
+  - https://gh-proxy.com/https://raw.githubusercontent.com/{path}
+  - https://ghproxy.net/https://raw.githubusercontent.com/{path}
+  - https://cdn.jsdelivr.net/gh/{path_jsd}
+  - https://ghfast.top/https://raw.githubusercontent.com/{path}
+
+sources_file: sources/registry.yaml
+
+store:
+  db: data/nodes.db
+  prune_days: 5           # 库越小，SQLite 查询越轻
+
+check:
+  tcp:
+    enabled: true
+    timeout: 3.0
+    threads: 160          # 只做 connect，不吃内存，可以开大
+  real:
+    enabled: true
+    threads: 32           # 真连并发；再高容易把慢节点误判成超时
+    timeout_ms: 5000
+    chunk: 200            # 一次灌给 mihomo 的节点数，直接决定内核内存
+    test_urls:
+    - https://www.gstatic.com/generate_204
+    - https://cp.cloudflare.com/generate_204
+    fail_threshold: 2     # 公开节点死得快，连续失败 2 次就降级，省得反复测
+    max_nodes: 10000      # 单次最多测 10000 个（优先测没测过的），防止跑一整夜
+    max_latency: 3000
+  mihomo_path: ''         # 留空自动下载对应平台的 mihomo 到 bin/
+  controller_port: 19090
+  verify_after_all: true  # 复核能剔掉「侥幸通过」的节点，实测只多花 40 秒，值得
+
+export:
+  dir: output
+  max_latency: 4000
+  top_n: 500              # 只导出最快的 500 个，客户端加载也快
+
+web:
+  host: 0.0.0.0           # 走 Caddy 反代时 install.sh 会自动改成 127.0.0.1
+  port: 8787
+  token: ''               # 留空则首次启动生成，写到 data/web_token.txt

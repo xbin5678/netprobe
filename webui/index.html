@@ -1,0 +1,1104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fa">
+<title>数据采集流水线</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M8 20l5-8 4 5 3-4 4 7' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --line:#e3e8f0; --text:#1f2937; --muted:#6b7280;
+  --faint:#9aa3af; --accent:#2563eb; --accent-2:#1d4ed8; --green:#16a34a;
+  --red:#dc2626; --amber:#d97706; --chip:#eef2f9;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--text); min-height:100vh;
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+       "Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+
+/* ---------- 顶栏 ---------- */
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:19px;margin:0;letter-spacing:.2px;font-weight:700}
+.pill{
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px;
+}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.14)}
+.dot.off{background:var(--faint)}
+.dot.live{background:var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+a.toplink{font-size:12.5px;color:var(--accent);text-decoration:none;
+  border:1px solid var(--line);background:var(--card);border-radius:999px;
+  padding:4px 12px;white-space:nowrap}
+a.toplink:hover{background:#eef4ff;border-color:#cfdffb}
+.spacer{flex:1}
+
+.stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 14px}
+.stat b{display:block;font-size:20px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.stat span{font-size:11.5px;color:var(--muted)}
+
+/* ---------- 工具栏 ---------- */
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+button{
+  font:inherit;font-size:13.5px;border-radius:9px;border:1px solid var(--line);
+  background:var(--card);color:var(--text);padding:8px 14px;cursor:pointer;
+  transition:background .15s,border-color .15s,opacity .15s;
+}
+button:hover:not(:disabled){background:#f0f4fb;border-color:#cfd9e8}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2)}
+button.danger{color:var(--red);border-color:#f3d4d4;background:#fdf3f3}
+button.danger:hover:not(:disabled){background:#fbe6e6}
+button.ghost{background:transparent}
+button.sm{padding:5px 10px;font-size:12.5px;border-radius:7px}
+
+/* ---------- 进度 ---------- */
+.progress{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 15px;margin-bottom:14px}
+.prow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.prow .phase{font-weight:600;font-size:13.5px}
+.prow .pct{margin-left:auto;color:var(--muted);font-size:12.5px;font-variant-numeric:tabular-nums}
+.bar{height:8px;border-radius:99px;background:#e6ecf6;overflow:hidden;margin:9px 0 7px}
+.bar>i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,#3b82f6,#2563eb);transition:width .4s ease}
+.detail{font-size:12.5px;color:var(--muted);min-height:18px}
+
+/* ---------- 标签页 ---------- */
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:0;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  padding:9px 16px;font-size:13.5px;color:var(--muted);cursor:pointer;border:0;
+  background:transparent;border-radius:9px 9px 0 0;font-weight:500;
+  white-space:nowrap;flex:none;
+}
+.tab:hover{background:#eef2f9}
+.tab.active{color:var(--accent);background:var(--card);border:1px solid var(--line);
+  border-bottom-color:var(--card);margin-bottom:-1px;font-weight:600}
+.panel{display:none;background:var(--card);border:1px solid var(--line);border-top:0;
+  border-radius:0 0 12px 12px;padding:14px}
+.panel.active{display:block}
+
+/* ---------- 日志 ---------- */
+#log{
+  font-family:var(--mono);font-size:12.5px;line-height:1.62;height:min(58vh,520px);
+  overflow:auto;white-space:pre-wrap;word-break:break-all;padding-right:4px;
+}
+#log div{padding:1px 0}
+#log .ok{color:var(--green)}
+#log .err{color:var(--red)}
+#log .warn{color:var(--amber)}
+#log .dim{color:var(--faint)}
+#log .sys{color:var(--accent);font-weight:600}
+.logbar{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-size:12.5px;color:var(--muted)}
+.logbar .spacer{flex:1}
+
+/* ---------- 表格 ---------- */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 10px;text-align:left;white-space:nowrap;border-bottom:1px solid #f0f3f8}
+th{
+  font-size:11.5px;font-weight:600;color:var(--muted);background:#f7f9fc;
+  position:sticky;top:0;cursor:pointer;user-select:none;
+}
+th:hover{color:var(--text)}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover{background:#f8fafd}
+tbody tr.clickable{cursor:pointer}
+.mono{font-family:var(--mono);font-size:12px}
+.tag{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;background:var(--chip);color:var(--muted)}
+.hi{color:var(--green)}
+.mid{color:var(--amber)}
+.lo{color:var(--red)}
+.empty{padding:36px 10px;text-align:center;color:var(--faint);font-size:13px}
+.emptybox{padding:34px 14px;text-align:center;color:var(--faint);font-size:13px;line-height:1.8}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:11px}
+select{
+  font:inherit;font-size:13px;padding:6px 9px;border:1px solid var(--line);
+  border-radius:8px;background:var(--card);color:var(--text);cursor:pointer;
+}
+label.f{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+/* 分段选择（3/5/7 天） */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--card)}
+.seg button{
+  font:inherit;font-size:12.5px;padding:6px 13px;border:0;background:transparent;
+  color:var(--muted);cursor:pointer;white-space:nowrap;
+}
+.seg button + button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--accent);color:#fff}
+.seg button .n{font-size:11px;opacity:.75;margin-left:3px}
+.hint{font-size:12px;color:var(--faint);margin:0 0 10px}
+.headline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:4px}
+.headline b{font-size:14px}
+.toolhint{max-width:900px;line-height:1.65}
+.toolhint b{color:var(--text)}
+
+/* ---------- 勾选批量操作 ---------- */
+th.sel, td.sel{width:30px;padding-right:0}
+td.sel input, th.sel input{margin:0;cursor:pointer;accent-color:var(--accent)}
+.selbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;
+  padding:8px 11px;background:#eef4ff;border:1px solid #cfdffb;border-radius:9px;
+  font-size:12.5px;color:var(--accent);
+}
+.selbar #selCount{font-weight:600;margin-right:2px}
+/* 只给普通按钮换白底；primary 按钮必须保留自己的底色，否则白字白底看不见 */
+.selbar button:not(.primary){background:#fff}
+.tcp-ok{color:var(--green)}
+.tcp-no{color:var(--red)}
+.tcp-na{color:var(--faint)}
+
+/* ---------- 订阅 ---------- */
+.subgrid{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
+.subcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 14px}
+.subcard .sh{display:flex;align-items:center;gap:8px;margin-bottom:2px}
+.subcard .sh b{font-size:13.5px}
+.subcard .cnt{
+  margin-left:auto;font-size:11.5px;font-weight:600;color:var(--accent);
+  background:#eaf1fe;border-radius:99px;padding:1px 8px;font-variant-numeric:tabular-nums;
+}
+.subcard .cnt.zero{color:var(--faint);background:var(--chip)}
+.subcard .apps{font-size:11.5px;color:var(--faint);line-height:1.5;margin-bottom:7px}
+.subcard .desc{font-size:12px;color:var(--muted);line-height:1.55;margin:0 0 9px}
+.subrow{display:flex;gap:6px;align-items:center}
+.suburl{
+  flex:1;min-width:0;font-family:var(--mono);font-size:11px;padding:7px 9px;
+  border:1px solid var(--line);border-radius:8px;background:#f8fafd;color:var(--muted);
+}
+.suburl:focus{outline:2px solid #bfd3fb;outline-offset:-1px;color:var(--text)}
+.warnbox{
+  display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.6;
+  color:#8a5a00;background:#fff9ea;border:1px solid #f5e3b8;border-radius:10px;
+  padding:9px 11px;margin-bottom:11px;
+}
+@media (max-width:560px){ .subgrid{grid-template-columns:1fr} }
+
+/* ---------- 提示条 ---------- */
+#toast{
+  position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+  background:#111827;color:#fff;font-size:13px;padding:9px 16px;border-radius:9px;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;
+  max-width:min(90vw,520px);text-align:center;
+}
+#toast.show{opacity:.96;transform:translate(-50%,0)}
+
+/* 中等宽度：勾选列 + TCP 列把表撑宽了，先把「首次发现」这种可有可无的列收起来 */
+@media (max-width:1150px){ .hide-md{display:none} }
+
+/* 地址列里超长域名会把整张表撑出屏幕，截断显示，完整值放 title 里 */
+.ell{display:inline-block;max-width:248px;overflow:hidden;text-overflow:ellipsis;
+     white-space:nowrap;vertical-align:bottom}
+
+@media (max-width:760px){
+  .wrap{padding:14px 12px 32px}
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .stat b{font-size:18px}
+  h1{font-size:17px}
+  .hide-sm{display:none}
+  #log{height:52vh;font-size:12px}
+  .panel{padding:11px}
+  .tab{padding:8px 12px;font-size:13px}
+  th,td{padding:6px 8px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>数据采集流水线</h1>
+    <span class="pill"><i class="dot" id="proxyDot"></i><span id="proxyTxt">代理检测中…</span></span>
+    <span class="spacer"></span>
+    <a class="toplink" href="/probe">订阅测速 →</a>
+    <span class="pill"><i class="dot" id="sseDot"></i><span id="sseTxt">连接中</span></span>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><b id="sTotal">-</b><span>库内节点</span></div>
+    <div class="stat"><b id="sAlive">-</b><span>当前可用</span></div>
+    <div class="stat"><b id="sSpeed">-</b><span>有下载速度</span></div>
+    <div class="stat"><b id="sSrc">-</b><span>有效源</span></div>
+    <div class="stat"><b id="sLast">-</b><span>上次耗时</span></div>
+  </div>
+
+  <div class="toolbar">
+    <button class="primary" id="btnAll">▶ 一键更新</button>
+    <button id="btnCollect">只采集</button>
+    <button id="btnFast">快速检测</button>
+    <button id="btnSlow">深度检测</button>
+    <button id="btnSpeed">测下载速度</button>
+    <button id="btnCheckNew">检测新节点</button>
+    <button id="btnVerify">复核可用</button>
+    <button class="danger" id="btnStop" disabled>■ 停止</button>
+    <span class="spacer"></span>
+    <button class="ghost sm" id="btnReport">看报告</button>
+  </div>
+
+  <p class="hint toolhint">
+    <b>一键更新</b>是自动流程（采集 → 检测 → 复核 → 测下载速度），每天也会定时自动跑一次；
+    后面几个是你手动触发的单步操作。<b>快速检测</b>只连 TCP 看端口通不通，几秒钟扫完，不改可用状态；
+    <b>深度检测</b>会真的发 HTTP 请求，通过才算可用；<b>测下载速度</b>是最后一档筛查，
+    真的跑一遍下载，测出速度的才算能承载流量（费流量，只测延迟最好的那几十个）。
+    想只测某几个节点，去「可用节点」勾选。
+  </p>
+
+  <div class="progress">
+    <div class="prow">
+      <span class="phase" id="pPhase">就绪</span>
+      <span class="pct"><span id="pPct">0%</span> · <span id="pTime">0s</span></span>
+    </div>
+    <div class="bar"><i id="pBar"></i></div>
+    <div class="detail" id="pDetail">点「一键更新」开始，或选单独步骤。</div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="log">运行日志</button>
+    <button class="tab" data-tab="src">数据源</button>
+    <button class="tab" data-tab="node">可用节点</button>
+    <button class="tab" data-tab="long">长期可用</button>
+    <button class="tab" data-tab="sub">订阅链接</button>
+  </div>
+
+  <!-- 日志 -->
+  <section class="panel active" id="panel-log">
+    <div class="logbar">
+      <span id="logCount">0 行</span>
+      <span class="spacer"></span>
+      <label class="f"><input type="checkbox" id="autoScroll" checked> 自动滚动</label>
+      <button class="sm ghost" id="btnClearLog">清屏</button>
+    </div>
+    <div id="log"></div>
+  </section>
+
+  <!-- 数据源 -->
+  <section class="panel" id="panel-src">
+    <div class="headline"><b id="srcHead">加载中…</b></div>
+    <p class="hint">按通过率排序。产量大但通过率低的源没有价值——大合集仓库常见 0.5-3%，小型精选源能到 30-55%。点表头可换排序。</p>
+    <div class="scroll">
+      <table id="srcTable">
+        <thead><tr>
+          <th data-k="name">源</th>
+          <th data-k="y" class="num">产量</th>
+          <th data-k="rate" class="num">通过率</th>
+          <th data-k="tested" class="num">可用/已测</th>
+          <th data-k="ex" class="num">独有</th>
+          <th data-k="reach">通道</th>
+          <th data-k="kind">类型</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 节点 -->
+  <section class="panel" id="panel-node">
+    <div class="headline"><b id="nodeHead">加载中…</b></div>
+    <p class="hint">连续存活 = 从最近一次「由死转活」算起的时长，中途掉线会归零。点某一行复制该节点链接。<b>TCP</b> 列是快速检测的结果（只代表端口开着，不代表能上网），勾选若干行可以只测这几个。</p>
+    <div class="filters">
+      <label class="f">分类
+        <select id="fProto">
+          <option value="">全部</option>
+          <option value="vless">vless</option>
+          <option value="vmess">vmess</option>
+          <option value="trojan">trojan</option>
+          <option value="ss">ss</option>
+          <option value="ssr">ssr</option>
+          <option value="hysteria2">hysteria2</option>
+          <option value="tuic">tuic</option>
+        </select>
+      </label>
+      <label class="f">数量
+        <select id="fLimit">
+          <option value="0">全部</option>
+          <option value="50">最快 50</option>
+          <option value="100">最快 100</option>
+          <option value="200">最快 200</option>
+        </select>
+      </label>
+      <label class="f">延迟
+        <select id="fLat">
+          <option value="0">不限</option>
+          <option value="800">≤ 800ms</option>
+          <option value="1500">≤ 1500ms</option>
+          <option value="3000">≤ 3000ms</option>
+        </select>
+      </label>
+      <label class="f">最终筛查
+        <select id="fSpeed">
+          <option value="">不限</option>
+          <option value="speed">只看有下载速度</option>
+        </select>
+      </label>
+      <label class="f">格式
+        <select id="fFmt">
+          <option value="clash">Clash 配置（完整）</option>
+          <option value="proxies">仅节点列表（YAML）</option>
+          <option value="base64">base64 订阅</option>
+          <option value="plain">明文链接</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <button class="sm" id="btnCopy">复制</button>
+      <button class="sm primary" id="btnDownload">下载</button>
+    </div>
+    <div class="selbar" id="selBar" style="display:none">
+      <span id="selCount">已选 0 个</span>
+      <button class="sm" id="btnSelFast">快速检测</button>
+      <button class="sm primary" id="btnSelSlow">深度检测</button>
+      <button class="sm ghost" id="btnSelClear">取消选择</button>
+    </div>
+    <div class="scroll">
+      <table id="nodeTable">
+        <thead><tr>
+          <th class="sel"><input type="checkbox" id="selAll" title="全选本页"></th>
+          <th>节点</th>
+          <th>协议</th>
+          <th>地址</th>
+          <th class="num">延迟</th>
+          <th class="num hide-sm">速度</th>
+          <th class="num hide-sm">TCP</th>
+          <th class="num hide-sm">连续存活</th>
+          <th class="num hide-sm">通过</th>
+          <th class="hide-md">首次发现</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="emptybox" id="nodeTableEmpty" style="display:none"></div>
+  </section>
+
+  <!-- 长期可用 -->
+  <section class="panel" id="panel-long">
+    <div class="headline"><b id="longHead">加载中…</b></div>
+    <p class="hint">连续存活超过所选天数、且至少成功验证过 2 次的节点。这类节点死得慢，适合当固定线路用。</p>
+    <div class="filters">
+      <div class="seg" id="segDays">
+        <button data-days="1">≥ 1 天</button>
+        <button class="on" data-days="3">≥ 3 天</button>
+        <button data-days="5">≥ 5 天</button>
+        <button data-days="7">≥ 7 天</button>
+      </div>
+      <label class="f">分类
+        <select id="fLongProto">
+          <option value="">全部</option>
+          <option value="vless">vless</option>
+          <option value="vmess">vmess</option>
+          <option value="trojan">trojan</option>
+          <option value="ss">ss</option>
+          <option value="ssr">ssr</option>
+          <option value="hysteria2">hysteria2</option>
+          <option value="tuic">tuic</option>
+        </select>
+      </label>
+      <label class="f">格式
+        <select id="fLongFmt">
+          <option value="clash">Clash 配置（完整）</option>
+          <option value="proxies">仅节点列表（YAML）</option>
+          <option value="base64">base64 订阅</option>
+          <option value="plain">明文链接</option>
+        </select>
+      </label>
+      <span class="spacer"></span>
+      <button class="sm" id="btnLongCopy">复制</button>
+      <button class="sm primary" id="btnLongDownload">下载</button>
+    </div>
+    <div class="scroll">
+      <table id="longTable">
+        <thead><tr>
+          <th>节点</th>
+          <th>协议</th>
+          <th>地址</th>
+          <th class="num">延迟</th>
+          <th class="num hide-sm">连续存活</th>
+          <th class="num hide-sm">通过</th>
+          <th class="hide-md">首次发现</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="emptybox" id="longTableEmpty" style="display:none"></div>
+  </section>
+
+  <!-- 订阅链接 -->
+  <section class="panel" id="panel-sub">
+    <div class="headline">
+      <b>订阅链接</b>
+      <span class="hint" id="subAlive" style="margin:0">加载中…</span>
+    </div>
+    <p class="hint">
+      挑一个跟你客户端对得上的链接，粘进去就行。客户端会自己定期回来拉最新节点，
+      不用手动更新。
+      <br>
+      <b>三档随便选：</b>「能连接」是真实 HTTP 测通的；「有下载速度」是最终筛查跑出
+      真实吞吐的，最少但最稳；「只测了端口」数量最多，但端口开着不代表代理能用。
+      选好档位再复制链接，链接里带参数，客户端一直按这一档拉。
+    </p>
+    <div class="warnbox">
+      <span>⚠</span>
+      <span><b>链接本身就是密码。</b>它不需要登录就能拉到全部节点，
+        别发到群里或公开的地方。怀疑泄露了点右下角「重置链接」，旧链接会立刻失效。</span>
+    </div>
+    <div class="filters">
+      <span class="hint" style="margin:0">订阅哪一档</span>
+      <div class="seg" id="segSubTier">
+        <button class="on" data-tier="alive">能连接<span class="n" id="tAlive">-</span></button>
+        <button data-tier="speed">有下载速度<span class="n" id="tSpeed">-</span></button>
+        <button data-tier="tcp">只测了端口<span class="n" id="tTcp">-</span></button>
+      </div>
+      <span class="spacer"></span>
+      <button class="ghost sm" id="btnSubReset">重置链接</button>
+    </div>
+    <div class="filters">
+      <span class="hint" style="margin:0">连续存活</span>
+      <div class="seg" id="segSubAge">
+        <button class="on" data-age="0">不限</button>
+        <button data-age="1">≥ 1 天</button>
+        <button data-age="3">≥ 3 天</button>
+        <button data-age="5">≥ 5 天</button>
+        <button data-age="7">≥ 7 天</button>
+      </div>
+    </div>
+    <div class="subgrid" id="subList"></div>
+    <p class="hint" id="subNote" style="margin:11px 0 0"></p>
+  </section>
+
+  <div id="toast"></div>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const S = { seq: 0, es: null, running: false, startedAt: 0, tab: "log",
+            nodes: [], srcRows: [], srcKey: "rate", srcDir: -1, tick: null,
+            longDays: 3, longRows: [], longOldest: 0, longCounts: {},
+            subAge: 0, subTier: "alive", subInfo: null, sel: new Set() };
+
+const nf = (n) => (n == null ? "-" : Number(n).toLocaleString("zh-CN"));
+
+function toast(msg, ms) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), ms || 2600);
+}
+
+async function api(path, opt) {
+  const r = await fetch(path, Object.assign({ credentials: "same-origin" }, opt || {}));
+  if (r.status === 401) { location.href = "/"; throw new Error("unauthorized"); }
+  if (!r.ok) {
+    let msg = "HTTP " + r.status;
+    try { const j = await r.json(); if (j.error) msg = j.error; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+/* ---------------- 统计 / 进度 ---------------- */
+
+function renderStats(stats, run, proxy) {
+  if (stats) {
+    $("sTotal").textContent = nf(stats.total);
+    $("sAlive").textContent = nf(stats.alive);
+    $("sSpeed").textContent = nf(stats.speed_ok || 0);
+    $("sSrc").textContent = nf(stats.sources_active);
+    // 分段按钮上带各档数量，不用点进去就知道有没有
+    if (stats.long) {
+      document.querySelectorAll("#segDays button").forEach((b) => {
+        const n = stats.long[b.dataset.days];
+        const base = `≥ ${b.dataset.days} 天`;
+        b.innerHTML = base + (n != null ? `<span class="n">${nf(n)}</span>` : "");
+      });
+      S.longOldest = Number(stats.long.oldest_hours || 0);
+      S.longCounts = stats.long;
+    }
+  }
+  if (run) {
+    $("sLast").textContent = run.last_elapsed ? Math.round(run.last_elapsed) + "s" : "-";
+  }
+  if (proxy) {
+    const on = proxy.up;
+    $("proxyDot").className = "dot " + (on ? "on" : "off");
+    $("proxyTxt").textContent = on ? "代理已开启（含 TG 频道）"
+                                   : (proxy.url ? "代理未开启（跳过 TG）" : "未配置代理（跳过 TG）");
+  }
+}
+
+function renderRun(run) {
+  S.running = !!run.running;
+  $("btnStop").disabled = !S.running;
+  ["btnAll", "btnCollect", "btnCheckNew", "btnFast", "btnSlow", "btnVerify",
+   "btnSpeed"].forEach((id) => { $(id).disabled = S.running; });
+
+  const pct = Math.max(0, Math.min(100, run.pct || 0));
+  $("pBar").style.width = pct + "%";
+  $("pPct").textContent = Math.round(pct) + "%";
+  $("pPhase").textContent = run.phase || "就绪";
+  // 定时任务在后台跑时，本进程没接管它的日志，只提示一句，别让人以为卡住了
+  if (run.external_pid && !run.running) {
+    $("pDetail").textContent = "后台定时任务正在运行（PID " + run.external_pid +
+      "），日志见 journalctl -u nodehub-update -f";
+  } else {
+    $("pDetail").textContent = run.detail || "";
+  }
+  S.startedAt = run.running && run.started ? run.started * 1000 : 0;
+
+  if (S.running && !S.tick) {
+    S.tick = setInterval(() => {
+      const s = S.startedAt ? Math.floor((Date.now() - S.startedAt) / 1000) : 0;
+      $("pTime").textContent = s + "s";
+    }, 1000);
+  } else if (!S.running && S.tick) {
+    clearInterval(S.tick); S.tick = null;
+    const s = Math.round(run.elapsed || 0);
+    $("pTime").textContent = s + "s";
+  }
+}
+
+async function loadStatus() {
+  try {
+    const d = await api("/api/status");
+    renderStats(d.stats, d.run, d.proxy);
+    renderRun(d.run);
+  } catch (e) { /* 断线时由 SSE 重连兜底 */ }
+}
+
+/* ---------------- 日志 ---------------- */
+
+function appendLog(text, cls) {
+  const box = $("log");
+  const atBottom = box.scrollTop + box.clientHeight >= box.scrollHeight - 40;
+  const d = document.createElement("div");
+  if (cls) d.className = cls;
+  d.textContent = text;
+  box.appendChild(d);
+  while (box.childElementCount > 800) box.removeChild(box.firstChild);
+  $("logCount").textContent = box.childElementCount + " 行";
+  if ($("autoScroll").checked && atBottom) box.scrollTop = box.scrollHeight;
+}
+
+/* ---------------- SSE ---------------- */
+
+function setSse(state, text) {
+  $("sseDot").className = "dot " + state;
+  $("sseTxt").textContent = text;
+}
+
+function connect() {
+  if (S.es) S.es.close();
+  const es = new EventSource("/api/stream?since=" + S.seq);
+  S.es = es;
+  es.onopen = () => setSse("live", "实时");
+  es.onerror = () => setSse("off", "重连中");
+  es.onmessage = (e) => {
+    let ev;
+    try { ev = JSON.parse(e.data); } catch (err) { return; }
+    if (ev.seq) S.seq = Math.max(S.seq, ev.seq);
+
+    if (ev.type === "line") {
+      appendLog(ev.text, ev.tag || "");
+      if (ev.cur != null || ev.pct != null || ev.phase || ev.detail) {
+        renderRun({ running: true, pct: ev.cur != null ? ev.cur : ev.pct,
+                    phase: ev.phase || $("pPhase").textContent,
+                    detail: ev.detail != null ? ev.detail : $("pDetail").textContent,
+                    started: S.startedAt / 1000 });
+      }
+    } else if (ev.type === "history") {
+      // 上次运行的日志（可能是昨晚定时任务跑的），只显示不覆盖当前状态
+      if (!$("log").childElementCount && ev.lines) {
+        ev.lines.forEach((l) => appendLog(l.text, l.tag || ""));
+        appendLog("—— 以上是上次运行的记录 ——", "sys");
+      }
+    } else if (ev.type === "start") {
+      $("log").innerHTML = "";
+      S.startedAt = Date.now();
+      renderRun({ running: true, pct: 0, phase: "启动中",
+                  detail: "正在启动流水线…", started: S.startedAt / 1000 });
+      appendLog(ev.text, "sys");
+    } else if (ev.type === "done") {
+      appendLog(ev.code === 0 ? `—— 完成，耗时 ${Math.round(ev.elapsed)} 秒 ——`
+                              : `—— 已中断（退出码 ${ev.code}）——`,
+                ev.code === 0 ? "sys" : "warn");
+      loadStatus();
+      if (S.tab === "src") loadSources();
+      if (S.tab === "node") loadNodes();
+      if (S.tab === "long") loadLong();
+    } else if (ev.type === "status") {
+      renderRun(ev.run);
+    }
+  };
+}
+
+/* ---------------- 任务 ---------------- */
+
+async function run(cmd, extra) {
+  try {
+    await api("/api/run", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ cmd, extra: extra || [] }),
+    });
+    setTab("log");
+    renderRun({ running: true, pct: 0, phase: "启动中", detail: "正在启动流水线…",
+                started: Date.now() / 1000 });
+  } catch (e) { toast("启动失败：" + e.message, 4000); }
+}
+
+async function stop() {
+  try {
+    const d = await api("/api/stop", { method: "POST" });
+    toast(d.ok ? "已发送停止信号" : "当前没有任务在跑");
+  } catch (e) { toast("停止失败：" + e.message); }
+}
+
+/* ---------------- 数据源 ---------------- */
+
+async function loadSources() {
+  try {
+    const d = await api("/api/sources");
+    S.srcRows = d.rows || [];
+    $("srcHead").textContent =
+      `${d.total_sources} 个源 · 通过率 ≥20% 的 ${d.good} 个 · 可用节点 ${nf(d.alive)} 个`;
+    renderSources();
+  } catch (e) { toast("数据源加载失败：" + e.message); }
+}
+
+function renderSources() {
+  const rows = S.srcRows.slice().sort((a, b) => {
+    const k = S.srcKey, dir = S.srcDir;
+    let x = a[k], y = b[k];
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;
+    if (y == null) return -1;
+    if (typeof x === "string") return dir * x.localeCompare(y, "zh");
+    return dir * (x - y);
+  });
+  const tb = $("srcTable").querySelector("tbody");
+  tb.innerHTML = rows.length ? "" : '<tr><td colspan="7" class="empty">还没有源数据，先跑一次采集</td></tr>';
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    let rateCls = "", rateTxt = "样本少";
+    if (r.rate != null) {
+      rateTxt = r.rate.toFixed(1) + "%";
+      rateCls = r.rate >= 20 ? "hi" : (r.rate >= 5 ? "mid" : "lo");
+    }
+    tr.innerHTML =
+      `<td>${esc(r.name)}</td>` +
+      `<td class="num">${nf(r.y)}</td>` +
+      `<td class="num ${rateCls}">${rateTxt}</td>` +
+      `<td class="num">${r.alive}/${r.tested}</td>` +
+      `<td class="num">${r.ex}</td>` +
+      `<td>${esc(r.reach)}</td>` +
+      `<td><span class="tag">${esc(r.kind)}</span></td>`;
+    tb.appendChild(tr);
+  }
+}
+
+/* ---------------- 节点 ---------------- */
+
+function qs(extra) {
+  const p = new URLSearchParams();
+  p.set("proto", $("fProto").value);
+  p.set("limit", $("fLimit").value);
+  p.set("lat", $("fLat").value);
+  if ($("fSpeed") && $("fSpeed").value) p.set("tier", $("fSpeed").value);
+  if (extra) for (const k in extra) p.set(k, extra[k]);
+  return p.toString();
+}
+
+async function loadNodes() {
+  try {
+    const d = await api("/api/nodes?" + qs());
+    S.nodes = d.rows || [];
+    const lats = S.nodes.map((n) => n.latency).filter(Boolean);
+    const min = lats.length ? Math.min(...lats) : "-";
+    const avg = lats.length ? Math.round(lats.reduce((a, b) => a + b, 0) / lats.length) : "-";
+    const onlySpeed = $("fSpeed") && $("fSpeed").value === "speed";
+    $("nodeHead").textContent = onlySpeed
+      ? `有下载速度 ${d.shown} 个 · 最快 ${min} ms · 库内可用共 ${nf(d.alive_total)} 个`
+      : `可用节点 ${d.shown} 个 · 最快 ${min} ms · 平均 ${avg} ms · 库内可用共 ${nf(d.alive_total)} 个`;
+    renderNodes();
+  } catch (e) { toast("节点加载失败：" + e.message); }
+}
+
+/* ---------------- 长期可用 ---------------- */
+
+async function loadLong() {
+  const proto = $("fLongProto").value;
+  const p = new URLSearchParams();
+  p.set("min_age", String(S.longDays));
+  p.set("limit", "0");
+  if (proto) p.set("proto", proto);
+  try {
+    const d = await api("/api/nodes?" + p.toString());
+    S.longRows = d.rows || [];
+    const lats = S.longRows.map((n) => n.latency).filter(Boolean);
+    const min = lats.length ? Math.min(...lats) : "-";
+    $("longHead").textContent =
+      `连续存活 ≥ ${S.longDays} 天：${d.shown} 个 · 最快 ${min} ms · 库内可用共 ${nf(d.alive_total)} 个`;
+    // 列表空的时候说清楚「还差多少」，不然容易以为坏了
+    let empty = `还没有连续存活 ≥ ${S.longDays} 天的节点`;
+    if (S.longOldest > 0) {
+      const h = S.longOldest;
+      const human = h >= 24 ? `${Math.floor(h / 24)} 天 ${Math.round(h % 24)} 小时`
+                            : `${Math.round(h)} 小时`;
+      empty += `；目前最老的可用节点已连续存活 ${human}`;
+    }
+    const oneDay = (S.longCounts || {})["1"];
+    if (S.longDays > 1 && oneDay > 0) empty += `（点「≥ 1 天」有 ${oneDay} 个）`;
+    renderRows("longTable", S.longRows, empty);  } catch (e) { toast("长期节点加载失败：" + e.message); }
+}
+
+async function longExport(kind) {
+  const fmt = $("fLongFmt").value;
+  const p = new URLSearchParams({ min_age: String(S.longDays), limit: "0", fmt });
+  const proto = $("fLongProto").value;
+  if (proto) p.set("proto", proto);
+  if (kind === "download") {
+    location.href = "/api/export?" + p.toString() + "&download=1";
+    return;
+  }
+  try {
+    const d = await api("/api/export?" + p.toString());
+    if (!d.text) { toast("没有符合条件的节点"); return; }
+    await copy(d.text);
+    toast(`已复制 ${d.count} 个长期节点（${d.desc}）`);
+  } catch (e) { toast("导出失败：" + e.message, 4000); }
+}
+
+function renderNodes() {
+  renderRows("nodeTable", S.nodes, "没有符合条件的节点",
+             { sel: true, tcp: true, speed: true });
+  // 表格重绘后勾选框是全新的 DOM，把「已选」状态同步回去
+  const alive = new Set(S.nodes.map((r) => r.fp));
+  [...S.sel].forEach((fp) => { if (!alive.has(fp)) S.sel.delete(fp); });
+  syncSel();
+}
+
+// 可用节点表和长期可用表结构一样，共用一套渲染
+function renderRows(tableId, rows, emptyText, opts) {
+  opts = opts || {};
+  const tb = $(tableId).querySelector("tbody");
+  const box = $(tableId + "Empty");
+  const wrap = $(tableId).closest(".scroll");
+  if (!rows.length) {
+    // 空的时候把表格藏起来，提示放到表格外面，窄屏下才不会被列宽撑出去
+    tb.innerHTML = "";
+    if (wrap) wrap.style.display = "none";
+    if (box) { box.textContent = emptyText; box.style.display = "block"; }
+    return;
+  }
+  if (wrap) wrap.style.display = "";
+  if (box) box.style.display = "none";
+  tb.innerHTML = "";
+  rows.forEach((r, i) => {
+    const lat = r.latency;
+    const cls = lat && lat < 800 ? "hi" : (lat && lat < 2000 ? "mid" : "");
+    let label = (r.name || "").trim().slice(0, 44);
+    if (!label || label === r.server + ":" + r.port || label === r.server) {
+      label = `${r.type.toUpperCase()}-${String(i + 1).padStart(3, "0")}` +
+              (lat ? ` ${lat}ms` : "");
+    }
+    // 快速检测结果：null 是没测过（老数据），1 通，0 不通
+    const tcp = r.tcp_ok == null ? '<span class="tcp-na">-</span>'
+      : (r.tcp_ok ? `<span class="tcp-ok">${r.tcp_ms ? r.tcp_ms + "ms" : "通"}</span>`
+                  : '<span class="tcp-no">不通</span>');
+    // 最终筛查的结果：有值就是实测吞吐，没值就是没测过/没跑通
+    const mb = r.speed ? r.speed / 1048576 : 0;
+    const spdCell = mb
+      ? `<span class="tcp-ok">${mb >= 10 ? mb.toFixed(1) : mb.toFixed(2)}</span>` +
+        `<span style="font-size:11px;color:var(--faint)"> MB/s</span>`
+      : '<span class="tcp-na">-</span>';
+    const tr = document.createElement("tr");
+    tr.className = "clickable";
+    tr.innerHTML =
+      (opts.sel ? `<td class="sel"><input type="checkbox" data-fp="${esc(r.fp)}"` +
+                  (S.sel.has(r.fp) ? " checked" : "") + `></td>` : "") +
+      `<td>${esc(label)}</td>` +
+      `<td><span class="tag">${esc(r.type)}</span></td>` +
+      `<td class="mono" title="${esc(r.server)}:${r.port}">` +
+        `<span class="ell">${esc(r.server)}:${r.port}</span></td>` +
+      `<td class="num ${cls}">${lat ? lat + " ms" : "-"}</td>` +
+      (opts.speed ? `<td class="num hide-sm">${spdCell}</td>` : "") +
+      (opts.tcp ? `<td class="num hide-sm">${tcp}</td>` : "") +
+      `<td class="num hide-sm">${ago(r.alive_since || r.first_seen)}</td>` +
+      `<td class="num hide-sm">${r.ok_count}</td>` +
+      `<td class="hide-md">${esc((r.first_seen || "").slice(0, 16))}</td>`;
+    tr.onclick = (ev) => {
+      if (ev.target && ev.target.tagName === "INPUT") return;   // 点勾选框别复制
+      if (r.uri) copy(r.uri).then(() => toast("已复制该节点链接"));
+      else toast("这个节点没有原始链接");
+    };
+    if (opts.sel) {
+      const cb = tr.querySelector("input[type=checkbox]");
+      cb.onchange = () => {
+        if (cb.checked) S.sel.add(r.fp); else S.sel.delete(r.fp);
+        syncSel();
+      };
+    }
+    tb.appendChild(tr);
+  });
+}
+
+/* ---------------- 勾选与批量检测 ---------------- */
+
+function syncSel() {
+  const n = S.sel.size;
+  $("selBar").style.display = n ? "flex" : "none";
+  $("selCount").textContent = `已选 ${n} 个节点`;
+  const all = $("selAll");
+  const boxes = document.querySelectorAll('#nodeTable tbody input[type=checkbox]');
+  all.checked = boxes.length > 0 && n >= boxes.length;
+  all.indeterminate = n > 0 && n < boxes.length;
+}
+
+function clearSel() {
+  S.sel.clear();
+  document.querySelectorAll('#nodeTable tbody input[type=checkbox]')
+    .forEach((c) => { c.checked = false; });
+  syncSel();
+}
+
+// 勾选的节点交给后端检测：fast=true 只连 TCP，fast=false 走真实 HTTP
+function testSelected(fast) {
+  const fps = [...S.sel];
+  if (!fps.length) return;
+  const extra = ["--fp", fps.join(",")];
+  if (fast) extra.push("--fast");
+  run("check", extra);
+}
+
+/* ---------------- 导出 ---------------- */
+
+async function doExport(kind) {
+  const fmt = $("fFmt").value;
+  if (kind === "download") {
+    location.href = "/api/export?" + qs({ fmt, download: "1" });
+    return;
+  }
+  try {
+    const d = await api("/api/export?" + qs({ fmt }));
+    if (!d.text) { toast("没有符合条件的节点"); return; }
+    await copy(d.text);
+    toast(`已复制 ${d.count} 个节点（${d.desc}，${d.text.length.toLocaleString()} 字符）`);
+  } catch (e) { toast("导出失败：" + e.message, 4000); }
+}
+
+async function copy(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* 落到下面的兜底 */ }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;left:-9999px;top:0";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  if (!ok) toast("复制失败，请手动选择内容复制", 4000);
+  return ok;
+}
+
+/* ---------------- 工具 ---------------- */
+
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function ago(ts) {
+  if (!ts) return "-";
+  const t = new Date(ts.replace(" ", "T")).getTime();
+  if (isNaN(t)) return "-";
+  const d = (Date.now() - t) / 1000;
+  if (d < 3600) return Math.max(0, Math.floor(d / 60)) + " 分";
+  if (d < 86400) return (d / 3600).toFixed(1) + " 小时";
+  return (d / 86400).toFixed(1) + " 天";
+}
+
+function setTab(name) {
+  S.tab = name;
+  document.querySelectorAll(".tab").forEach((b) =>
+    b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".panel").forEach((p) =>
+    p.classList.toggle("active", p.id === "panel-" + name));
+  if (name === "src") loadSources();
+  if (name === "node") loadNodes();
+  if (name === "long") loadLong();
+  if (name === "sub") loadSub();
+}
+
+/* ---------------- 绑定 ---------------- */
+
+document.querySelectorAll(".tab").forEach((b) => {
+  b.onclick = () => setTab(b.dataset.tab);
+});
+
+$("btnAll").onclick = () => run("all", []);
+$("btnCollect").onclick = () => run("collect", []);
+$("btnCheckNew").onclick = () => run("check", ["--unchecked"]);
+// 全库检测：快速只连 TCP（几秒到几十秒），深度才真发 HTTP 请求
+$("btnFast").onclick = () => run("check", ["--fast", "--scope", "all"]);
+$("btnSlow").onclick = () => run("check", ["--scope", "all"]);
+$("btnVerify").onclick = () => run("verify", []);
+// 最终筛查：给当前可用里延迟最好的那几十个真跑一遍下载
+$("btnSpeed").onclick = () => run("speed", []);
+
+/* 勾选批量检测（手动检测） */
+$("selAll").onchange = (ev) => {
+  const on = ev.target.checked;
+  S.sel.clear();
+  document.querySelectorAll("#nodeTable tbody input[type=checkbox]").forEach((c) => {
+    c.checked = on;
+    if (on) S.sel.add(c.dataset.fp);
+  });
+  syncSel();
+};
+$("btnSelFast").onclick = () => testSelected(true);
+$("btnSelSlow").onclick = () => testSelected(false);
+$("btnSelClear").onclick = clearSel;
+
+$("btnStop").onclick = stop;
+$("btnClearLog").onclick = () => { $("log").innerHTML = ""; $("logCount").textContent = "0 行"; };
+$("btnReport").onclick = () => window.open("/api/report", "_blank");
+$("btnCopy").onclick = () => doExport("copy");
+$("btnDownload").onclick = () => doExport("download");
+["fProto", "fLimit", "fLat", "fSpeed"].forEach((id) => { $(id).onchange = loadNodes; });
+
+/* 长期可用：3/5/7 天分段切换 */
+document.querySelectorAll("#segDays button").forEach((b) => {
+  b.onclick = () => {
+    S.longDays = Number(b.dataset.days);
+    document.querySelectorAll("#segDays button").forEach(
+      (x) => x.classList.toggle("on", x === b));
+    loadLong();
+  };
+});
+$("fLongProto").onchange = loadLong;
+$("btnLongCopy").onclick = () => longExport("copy");
+$("btnLongDownload").onclick = () => longExport("download");
+
+document.querySelectorAll("#srcTable th").forEach((th) => {
+  th.onclick = () => {
+    const k = th.dataset.k;
+    if (S.srcKey === k) S.srcDir = -S.srcDir;
+    else { S.srcKey = k; S.srcDir = (k === "name" || k === "kind" || k === "reach") ? 1 : -1; }
+    renderSources();
+  };
+});
+
+/* ---------------- 订阅链接 ---------------- */
+
+async function loadSub() {
+  let d;
+  try {
+    d = await api("/api/sub?min_age=" + S.subAge + "&tier=" + S.subTier);
+  } catch (e) {
+    $("subAlive").textContent = "加载失败：" + e.message;
+    return;
+  }
+  S.subInfo = d;
+  // 三档各有多少，直接标在按钮上——「有下载速度」那档少得刺眼，但那才是真能用的
+  const tc = d.tiers || {};
+  $("tAlive").textContent = nf(tc.alive || 0);
+  $("tSpeed").textContent = nf(tc.speed || 0);
+  $("tTcp").textContent = nf(tc.tcp || 0);
+  const capped = d.limit && d.available > d.alive;
+  $("subAlive").textContent = capped
+    ? `当前 ${nf(d.alive)} 个节点（符合条件 ${nf(d.available)}，订阅上限 ${nf(d.limit)}）`
+    : `当前 ${nf(d.alive)} 个节点`;
+  if (!d.alive) {
+    $("subList").innerHTML = "";
+    $("subNote").innerHTML = d.tier === "speed"
+      ? "这一档还没有节点。最终筛查每天跑一次，跑过之后才有；" +
+        "也可以在命令行手动跑 <code>python run.py speed</code>。"
+      : "这一档还没有节点，换个档位或放宽存活天数看看。";
+    return;
+  }
+  $("subList").innerHTML = d.formats.map((f) => `
+    <div class="subcard">
+      <div class="sh">
+        <b>${esc(f.name)}</b>
+        <span class="cnt${f.count ? "" : " zero"}">${nf(f.count)} 个</span>
+      </div>
+      <div class="apps">${esc(f.apps)}</div>
+      <p class="desc">${esc(f.desc)}</p>
+      <div class="subrow">
+        <input class="suburl" readonly value="${esc(f.url)}" title="点一下全选">
+        <button class="sm primary" data-copy="${esc(f.url)}">复制</button>
+      </div>
+    </div>`).join("");
+
+  // 有格式被跳掉节点时说清楚，不然用户会以为少了
+  const sk = d.formats.filter((f) => f.skipped > 0);
+  $("subNote").innerHTML = sk.length
+    ? "跳过的节点是客户端本身不支持的协议（比如 Surge 没有 VLESS），不是漏了。" +
+      sk.map((f) => ` ${esc(f.name)} 跳过 ${nf(f.skipped)} 个；`).join("")
+    : "";
+}
+
+// 点输入框直接全选，省得手拖
+$("subList").addEventListener("click", (ev) => {
+  const inp = ev.target.closest(".suburl");
+  if (inp) { inp.select(); return; }
+  const btn = ev.target.closest("[data-copy]");
+  if (btn) {
+    copy(btn.dataset.copy).then((ok) => { if (ok) toast("链接已复制"); });
+  }
+});
+
+document.querySelectorAll("#segSubAge button").forEach((b) => {
+  b.onclick = () => {
+    S.subAge = Number(b.dataset.age);
+    document.querySelectorAll("#segSubAge button").forEach(
+      (x) => x.classList.toggle("on", x === b));
+    loadSub();
+  };
+});
+
+document.querySelectorAll("#segSubTier button").forEach((b) => {
+  b.onclick = () => {
+    S.subTier = b.dataset.tier;
+    document.querySelectorAll("#segSubTier button").forEach(
+      (x) => x.classList.toggle("on", x === b));
+    loadSub();
+  };
+});
+
+$("btnSubReset").onclick = async () => {
+  if (!confirm("重置后，所有旧订阅链接立刻失效，已经导入的客户端会拉不到节点。确定要换吗？"))
+    return;
+  try {
+    await api("/api/sub/reset", { method: "POST", body: "{}" });
+    toast("已换新链接，旧链接作废");
+    loadSub();
+  } catch (e) { toast("重置失败：" + e.message, 4000); }
+};
+
+/* ---------------- 启动 ---------------- */
+
+(async function boot() {
+  await loadStatus();
+  connect();
+  setInterval(loadStatus, 5000);
+  // 支持 #src / #node 直接落到某个标签页，方便收藏和分享
+  const h = (location.hash || "").replace("#", "");
+  if (["src", "node", "long", "sub", "log"].includes(h)) setTab(h);
+  window.addEventListener("beforeunload", () => { if (S.es) S.es.close(); });
+})();
+</script>
+</body>
+</html>

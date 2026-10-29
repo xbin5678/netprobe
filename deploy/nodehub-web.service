@@ -1,0 +1,35 @@
+[Unit]
+Description=数据采集流水线 · 网页版 (web.py)
+Documentation=file:///opt/nodehub/DEPLOY-VPS.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/nodehub
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONIOENCODING=utf-8
+ExecStart=/opt/nodehub/.venv/bin/python /opt/nodehub/web.py --config /opt/nodehub/config.yaml
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=20
+
+# 低配机保护：出问题时让机器先活下来
+Nice=5
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+# 内存硬上限。跑测速时如果一直被打 OOM，就把这两行打开，或者调大 swap。
+# MemoryHigh=360M
+# MemoryMax=460M
+
+# 收紧权限（不给写系统目录，只留项目目录）
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/opt/nodehub
+
+[Install]
+WantedBy=multi-user.target

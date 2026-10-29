@@ -1,0 +1,36 @@
+# ---- 运行期数据（绝对不要提交）----
+data/
+output/
+out/
+*.db
+*.db-shm
+*.db-wal
+*.log
+*.lock
+sub_key.txt
+web_token.txt
+
+# ---- 本地环境与缓存 ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.tmp/
+*.egg-info/
+
+# ---- 内核二进制（各平台自行下载，见 README）----
+bin/
+!bin/.gitkeep
+
+# ---- 工具与编辑器 ----
+.workbuddy-ai/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# ---- 本机专属配置（含代理端口等私人设置）----
+config.local.yaml
+
+# ---- 截图（界面里有订阅链接和密钥，只留本地）----
+docs/*.png

@@ -1,0 +1,3377 @@
+version: 1
+updated: '2026-10-28'
+field_help:
+  status: active=已收录进采集流水线 / candidate=能出节点但产量低或未评估 / dead=当前不可用
+  kind: github=代码仓库 / telegram=频道 / site=节点站 / aggregator=聚合服务
+  yield: 上次探测解析出的节点条数（未去重），仅作规模参考，不代表可用率
+sources:
+- id: Epodonios/v2ray-configs
+  url: https://raw.githubusercontent.com/Epodonios/v2ray-configs/main/All_Configs_Sub.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 7844
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 纯链接大合集，产量最高但独有节点为 0——全部是别的源已有的内容，实际贡献为零
+  tags:
+  - bulk
+  - high-yield
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 7,844 但真连通过率仅 3.5%（41/1185），典型大合集，占用采集和检测时间
+- id: Barabama/merged.txt
+  url: https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/merged.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 7229
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - tuic
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 产量 7229 但独有仅 265（3%），绝大部分与 txt 版重复
+  tags: []
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 7,229 但真连通过率仅 1.9%（18/932），典型大合集，占用采集和检测时间
+- id: Surfboardv2ray/TGParse
+  url: https://raw.githubusercontent.com/Surfboardv2ray/TGParse/main/splitted/mixed
+  kind: github
+  status: archived
+  format: base64-uri
+  yield: 7310
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 抓 Telegram 频道再拆分，独有节点为 0，说明其上游已被其他源覆盖
+  tags:
+  - bulk
+  - telegram-proxy
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 7,310 但真连通过率仅 3.5%（40/1148），典型大合集，占用采集和检测时间
+- id: mahdibland/V2RayAggregator
+  url: https://raw.githubusercontent.com/mahdibland/V2RayAggregator/master/sub/sub_merge.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 4471
+  types:
+  - ss
+  - ssr
+  - trojan
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 独有 1202 个，通过率 1.8%，大合集里相对好一点的
+  tags:
+  - bulk
+  - legacy
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 4,471 但真连通过率仅 1.8%（16/900），典型大合集，占用采集和检测时间
+- id: ALIILAPRO/v2rayNG-Config
+  url: https://raw.githubusercontent.com/ALIILAPRO/v2rayNG-Config/main/sub.txt
+  kind: github
+  status: archived
+  format: base64-uri
+  yield: 3841
+  types:
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 独有节点第二多（2019 个），base64 订阅
+  tags:
+  - bulk
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 3,841 但真连通过率仅 0.6%（4/721），典型大合集，占用采集和检测时间
+- id: Barabama/merged.yaml
+  url: https://raw.githubusercontent.com/Barabama/FreeNodes/main/nodes/merged.yaml
+  kind: github
+  status: archived
+  format: clash-yaml
+  yield: 3200
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: clash 格式版，与同仓库 txt 版完全重合，独有为 0，可考虑降级
+  tags: []
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 3,200 但真连通过率仅 1.6%（20/1218），典型大合集，占用采集和检测时间
+- id: anaer/Sub
+  url: https://raw.githubusercontent.com/anaer/Sub/main/clash.yaml
+  kind: github
+  status: archived
+  format: clash-yaml
+  yield: 1839
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 独有 1105 个，clash yaml 结构规整
+  tags:
+  - clash
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 1,839 但真连通过率仅 0.0%（0/433），典型大合集，占用采集和检测时间
+- id: freeclashnode-2
+  url: https://www.freeclashnode.com/uploads/{YYYY}/{MM}/2-{YYYYMMDD}.yaml
+  kind: site
+  status: active
+  format: clash-yaml
+  yield: 641
+  types:
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 站点源，0/1/2/3 四个文件，URL 规则会变
+  tags: &id001
+  - site
+  reach: both
+- id: MhdiTaheri/V2rayCollector
+  url: https://raw.githubusercontent.com/MhdiTaheri/V2rayCollector/main/sub/mix
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 786
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: TG 采集器产物
+  tags:
+  - bulk
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 786 但真连通过率仅 2.8%（4/141），典型大合集，占用采集和检测时间
+- id: w1770946466/Auto_proxy
+  url: https://raw.githubusercontent.com/w1770946466/Auto_proxy/main/Long_term_subscription_num
+  kind: github
+  status: archived
+  format: base64-uri
+  yield: 555
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 长期订阅，节点偏稳
+  tags:
+  - stable
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 555 但真连通过率仅 0.0%（0/81），典型大合集，占用采集和检测时间
+- id: ermaozi/v2ray
+  url: https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 75
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 与 ermaozi/clash 内容相同，只是格式不同
+  tags: []
+  reach: both
+- id: freeclashnode-0
+  url: https://www.freeclashnode.com/uploads/{YYYY}/{MM}/0-{YYYYMMDD}.yaml
+  kind: site
+  status: active
+  format: clash-yaml
+  yield: 434
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 站点源，0/1/2/3 四个文件，URL 规则会变
+  tags: *id001
+  reach: both
+- id: peasoft/NoMoreWalls-list
+  url: https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.txt
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 429
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 知名仓库，人工维护，质量高；yml 和 txt 两版
+  tags:
+  - curated
+  - high-quality
+  reach: both
+- id: AutoMergePublicNodes-txt
+  url: https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/master/list.txt
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 429
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 数值与 NoMoreWalls 完全一致（422/109），疑为镜像，增量有限
+  tags: []
+  reach: both
+- id: ermaozi/clash
+  url: https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/clash.yml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 356
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 主仓库产物的 clash 格式版
+  tags: []
+  reach: both
+- id: ts-sf/fly
+  url: https://raw.githubusercontent.com/ts-sf/fly/main/v2
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 201
+  types:
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 产量中等
+  tags: []
+  reach: both
+- id: ShadowsocksAggregator
+  url: https://raw.githubusercontent.com/mahdibland/ShadowsocksAggregator/master/Eternity.yml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 201
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: Eternity.yml，偏 ss/trojan
+  tags:
+  - legacy
+  reach: both
+- id: NoMoreWalls-list.yml
+  url: https://raw.githubusercontent.com/peasoft/NoMoreWalls/master/list.yml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 117
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: NoMoreWalls 的 yml 版，节点数远少于 txt 版（109 vs 422）
+  tags: []
+  reach: both
+- id: AutoMerge-list.yml
+  url: https://raw.githubusercontent.com/chengaopan/AutoMergePublicNodes/master/list.yml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 117
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 同上，与 NoMoreWalls 的 yml 版数值一致
+  tags: []
+  reach: both
+- id: mfuu/FreeProxies
+  url: https://raw.githubusercontent.com/mfuu/FreeProxies/master/sub
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 105
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: 8h
+  last_verified: '2026-10-28'
+  note: 人工精选，通过率高；yaml 有截断需抢救解析
+  tags: &id002
+  - curated
+  - high-quality
+  reach: both
+- id: mfuu/FreeProxies-yaml
+  url: https://raw.githubusercontent.com/mfuu/FreeProxies/master/sub.yaml
+  kind: github
+  status: active
+  format: clash-yaml(salvaged)
+  yield: 103
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: 8h
+  last_verified: '2026-10-28'
+  note: 人工精选，通过率高；yaml 有截断需抢救解析
+  tags: *id002
+  reach: both
+- id: free-nodes/v2rayfree
+  url: https://raw.githubusercontent.com/free-nodes/v2rayfree/main/sub
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 85
+  types:
+  - ss
+  - vless
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 原 aiboboxx/v2rayfree，仓库已改名
+  tags:
+  - curated
+  reach: both
+- id: v2rayfree-sub
+  url: https://raw.githubusercontent.com/aiboboxx/v2rayfree/main/sub
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 85
+  types:
+  - ss
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: aiboboxx 旧地址，会重定向到 free-nodes/v2rayfree，内容相同
+  tags: []
+  reach: both
+- id: Kwinshadow/TGCollector
+  url: https://raw.githubusercontent.com/Kwinshadow/TelegramV2rayCollector/main/sublinks/mix.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 82
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: TG 采集器
+  tags:
+  - telegram-proxy
+  reach: both
+- id: freeclashnode-1
+  url: https://www.freeclashnode.com/uploads/{YYYY}/{MM}/1-{YYYYMMDD}.yaml
+  kind: site
+  status: active
+  format: clash-yaml
+  yield: 98
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 站点源，0/1/2/3 四个文件，URL 规则会变
+  tags: *id001
+  reach: both
+- id: Ruk1ng001/clash
+  url: https://raw.githubusercontent.com/Ruk1ng001/freeSub/main/clash.yaml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 70
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - tuic
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 协议覆盖最全，含 tuic 和 ssr
+  tags: []
+  reach: both
+- id: snakem982/v2ray-2
+  url: https://raw.githubusercontent.com/snakem982/proxypool/main/source/v2ray-2.txt
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 56
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 自建 proxypool 产物，v2ray 明文格式
+  tags: []
+  reach: both
+- id: freeclashnode-3
+  url: https://www.freeclashnode.com/uploads/{YYYY}/{MM}/3-{YYYYMMDD}.yaml
+  kind: site
+  status: active
+  format: clash-yaml
+  yield: 21
+  types:
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 站点源，0/1/2/3 四个文件，URL 规则会变
+  tags: *id001
+  reach: both
+- id: ermaozi01/free_clash_vpn
+  url: https://raw.githubusercontent.com/ermaozi01/free_clash_vpn/main/subscribe/v2ray.txt
+  kind: github
+  status: candidate
+  format: base64-uri
+  yield: 19
+  types:
+  - ss
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: ermaozi 的旧仓库
+  tags:
+  - legacy
+  reach: both
+- id: ripaojiedian/clash
+  url: https://raw.githubusercontent.com/ripaojiedian/freenode/main/clash
+  kind: github
+  status: candidate
+  format: clash-yaml
+  yield: 14
+  types:
+  - ss
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: ripaojiedian 的 clash 版
+  tags: []
+  reach: both
+- id: ripaojiedian/freenode
+  url: https://raw.githubusercontent.com/ripaojiedian/freenode/main/sub
+  kind: github
+  status: candidate
+  format: base64-uri
+  yield: 13
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 产量小但质量稳定
+  tags:
+  - curated
+  reach: both
+- id: Pawdroid/Free-servers
+  url: https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub
+  kind: github
+  status: candidate
+  format: base64-uri
+  yield: 12
+  types:
+  - ss
+  - trojan
+  - vless
+  freq: 6h
+  last_verified: '2026-10-28'
+  note: 产量很小（10 条左右），但都是精选
+  tags:
+  - curated
+  reach: both
+- id: soroushmirzaei/tgc
+  url: https://raw.githubusercontent.com/soroushmirzaei/telegram-configs-collector/main/protocols/vless
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 按协议拆分，vless 单独一个文件
+  tags:
+  - telegram-proxy
+- id: Flik6/getNode
+  url: https://raw.githubusercontent.com/Flik6/getNode/main/v2ray.txt
+  kind: github
+  status: dead
+  format: fetch:empty
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 本次探测 0 条，疑似停更，待复查
+  tags: []
+- id: barry-far/V2ray-Configs
+  url: https://raw.githubusercontent.com/barry-far/V2ray-Configs/main/All_Configs_Sub.txt
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 同类大合集，产量随日期波动
+  tags:
+  - bulk
+- id: tbbatbb/Proxy
+  url: https://raw.githubusercontent.com/tbbatbb/Proxy/master/dist/v2ray.config.txt
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 本次探测 0 条，疑似停更
+  tags: []
+- id: aiboboxx/clashfree
+  url: https://raw.githubusercontent.com/aiboboxx/clashfree/main/clash.yml
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 本次探测 0 条，aiboboxx 已把主力迁到 v2rayfree
+  tags: []
+- id: Leon406/Sub
+  url: https://raw.githubusercontent.com/Leon406/Sub/master/sub/share/all
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 本次探测 0 条，路径可能已变，需去仓库看文件树
+  tags: []
+- id: yebekhe/TGCollector
+  url: https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/normal/mix
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: daily
+  last_verified: '2026-10-28'
+  note: TG 采集器，按地区分文件
+  tags:
+  - telegram-proxy
+- id: vveg26/get_proxy
+  url: https://raw.githubusercontent.com/vveg26/get_proxy/main/dist/v2ray.config.txt
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 本次探测 0 条，dist 目录结构可能已变
+  tags: []
+- id: t.me/ripaojiedian
+  url: https://t.me/s/ripaojiedian
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: a2470982985/getNode
+  url: https://raw.githubusercontent.com/a2470982985/getNode/main/v2ray.txt
+  kind: github
+  status: dead
+  format: fetch:empty
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 返回空文件，已停更
+  tags: []
+- id: t.me/vpnfail_vless
+  url: https://t.me/s/vpnfail_vless
+  kind: telegram
+  status: candidate
+  format: tg-html(12 uris)
+  yield: 12
+  types:
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+  reach: proxy
+- id: t.me/freev2ray_configs
+  url: https://t.me/s/freev2ray_configs
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/proxy_mtm
+  url: https://t.me/s/proxy_mtm
+  kind: telegram
+  status: candidate
+  format: tg-html(73 uris)
+  yield: 73
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+  reach: proxy
+- id: t.me/oneclickvpnkeys
+  url: https://t.me/s/oneclickvpnkeys
+  kind: telegram
+  status: candidate
+  format: tg-html(96 uris)
+  yield: 96
+  types:
+  - hysteria2
+  - trojan
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+  reach: proxy
+- id: Ruk1ng001/v2ray
+  url: https://raw.githubusercontent.com/Ruk1ng001/freeSub/main/v2ray.txt
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，该仓库只有 clash.yaml
+  tags: []
+- id: ermaozi/reachable
+  url: https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/reachable
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，文件已移除
+  tags: []
+- id: t.me/v2ray_configs_pool
+  url: https://t.me/s/v2ray_configs_pool
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: snakem982/clash-meta
+  url: https://raw.githubusercontent.com/snakem982/proxypool/main/source/clash-meta.yaml
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，只有 clash-meta-2.yaml
+  tags: []
+- id: t.me/nodefree
+  url: https://t.me/s/nodefree
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/jichangbaipiao
+  url: https://t.me/s/jichangbaipiao
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/FreeVlessVpn
+  url: https://t.me/s/FreeVlessVpn
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/v2rayngvpn
+  url: https://t.me/s/v2rayngvpn
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/ProxyCollector
+  url: https://t.me/s/ProxyCollector
+  kind: telegram
+  status: dead
+  format: tg-html(0 uris)
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+- id: t.me/outline_vpn
+  url: https://t.me/s/outline_vpn
+  kind: telegram
+  status: candidate
+  format: tg-html(175 uris)
+  yield: 174
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 国内网络直连 t.me 超时，需代理；或改用 Surfboardv2ray/TGParse 这类采集器产物间接覆盖
+  tags: []
+  reach: proxy
+- id: freev2
+  url: https://freev2.net/wp-content/uploads/{YYYY}/{MM}/{YYYYMMDD}.yaml
+  kind: site
+  status: dead
+  format: fetch:HTTP 526
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: HTTP 526，站点证书异常
+  tags: []
+- id: clashnode
+  url: https://clashnode.xyz/wp-content/uploads/{YYYY}/{MM}/{YYYYMMDD}.yaml
+  kind: site
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，URL 规则可能已变
+  tags: []
+- id: v2rayshare
+  url: https://www.v2rayshare.com/wp-content/uploads/{YYYY}/{MM}/{YYYYMMDD}.yaml
+  kind: site
+  status: dead
+  format: fetch:SSLError
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 连接被代理拦截（ProxyError），需关闭本机代理后复查
+  tags: []
+- id: oneclash
+  url: https://oneclash.cc/wp-content/uploads/{YYYY}/{MM}/{YYYYMMDD}.yaml
+  kind: site
+  status: dead
+  format: fetch:SSLError
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 连接被代理拦截（ProxyError），需关闭本机代理后复查
+  tags: []
+- id: nodefree
+  url: https://nodefree.org/dy/{YYYY}/{MM}/{YYYYMMDD}.txt
+  kind: site
+  status: dead
+  format: fetch:SSLError
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 连接被代理拦截（ProxyError），需关闭本机代理后复查
+  tags: []
+- id: mfuu/v2ray
+  url: https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，仓库已改名为 FreeProxies
+  tags: []
+- id: snakem982/v2ray-3
+  url: https://raw.githubusercontent.com/snakem982/proxypool/main/source/v2ray-3.txt
+  kind: github
+  status: dead
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 404，只有 v2ray-2.txt
+  tags: []
+- id: barry-far/V2ray-Config
+  url: https://raw.githubusercontent.com/barry-far/V2ray-Config/main/All_Configs_Sub.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 7823
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 15 分钟更新一次，产量最大但独有节点为 0，与 Epodonios 高度重合
+  tags:
+  - iran
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 7,823 但真连通过率仅 3.7%（41/1120），典型大合集，占用采集和检测时间
+- id: Alirewa/V2ray-Configs
+  url: https://raw.githubusercontent.com/Alirewa/V2ray-Configs/main/config.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 1296
+  types:
+  - ss
+  - trojan
+  - vless
+  freq: 30min
+  last_verified: '2026-10-28'
+  note: 30分钟更新，聚合180+TG频道+20个GitHub仓库
+  tags:
+  - iran
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 1,296 但真连通过率仅 2.8%（7/251），典型大合集，占用采集和检测时间
+- id: MohammadBahemmat/all_servers
+  url: https://raw.githubusercontent.com/MohammadBahemmat/V2ray-Collector/main/all_servers.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 407
+  types:
+  - hysteria2
+  - ss
+  - trojan
+  - tuic
+  - vless
+  - vmess
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 伊朗系采集器，扫描GitHub+TG，按协议分类输出
+  tags:
+  - iran
+  reach: both
+- id: MohammadBahemmat/vless
+  url: https://raw.githubusercontent.com/MohammadBahemmat/V2ray-Collector/main/servers/vless_servers.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 226
+  types:
+  - vless
+  freq: daily
+  last_verified: '2026-10-28'
+  note: 同上，vless 单独文件
+  tags:
+  - iran
+  reach: both
+- id: iboxz/free-v2ray-collector
+  url: https://raw.githubusercontent.com/iboxz/free-v2ray-collector/main/main/mix.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 358
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: 2h
+  last_verified: '2026-10-28'
+  note: 伊朗系，2小时更新一次，网站带在线测速
+  tags:
+  - iran
+  reach: both
+- id: shaoyouvip/free
+  url: https://raw.githubusercontent.com/shaoyouvip/free/main/all.yaml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 22
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★1294）
+  tags:
+  - discovered
+  reach: both
+- id: NiREvil/vless
+  url: https://raw.githubusercontent.com/NiREvil/vless/main/AllConfigsSub.txt
+  kind: github
+  status: candidate
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★1360，搜索词「v2ray subscription」） ｜ 本次探测为 0
+  tags:
+  - discovered
+- id: awesome-vpn/awesome-vpn
+  url: https://raw.githubusercontent.com/awesome-vpn/awesome-vpn/master/clash.yaml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 41
+  types:
+  - hysteria2
+  - ss
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★6784，搜索词「free v2ray nodes」）
+  tags:
+  - discovered
+  reach: both
+- id: VPN-Subcription-Links/ClashX-V2Ray-TopFreeProxy
+  url: https://raw.githubusercontent.com/VPN-Subcription-Links/ClashX-V2Ray-TopFreeProxy/main/combine/clash.config.yaml
+  kind: github
+  status: archived
+  format: clash-yaml
+  yield: 2540
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★5667，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 2,540 但真连通过率仅 3.6%（24/668），典型大合集，占用采集和检测时间
+- id: Leon406/SubCrawler
+  url: https://raw.githubusercontent.com/Leon406/SubCrawler/master/sub/share/vless
+  kind: github
+  status: archived
+  format: base64-uri
+  yield: 17910
+  types:
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: 独有 15119 个（全库最多），但通过率仅 0.4%——量极大、可用极少，典型的大杂烩
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 17,910 但真连通过率仅 0.4%（21/5329），典型大合集，占用采集和检测时间
+- id: gslege/CloudflareIP
+  url: https://raw.githubusercontent.com/gslege/CloudflareIP/main/Vless.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 20
+  types:
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★674）
+  tags:
+  - discovered
+  reach: both
+- id: 0xRadikal/Free-v2ray-Configs
+  url: https://raw.githubusercontent.com/0xRadikal/Free-v2ray-Configs/main/top100.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 98
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★772，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+- id: dongchengjie/airport
+  url: https://raw.githubusercontent.com/dongchengjie/airport/main/subs/merged/tested_within.yaml
+  kind: github
+  status: archived
+  format: clash-yaml
+  yield: 1487
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - tuic
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★737）
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 1,487 但真连通过率仅 0.0%（0/291），典型大合集，占用采集和检测时间
+- id: MatinGhanbari/v2ray-configs
+  url: https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/all_sub.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 3985
+  types:
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★690，搜索词「free vpn configs」）
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 3,985 但真连通过率仅 1.1%（9/783），典型大合集，占用采集和检测时间
+- id: sinavm/SVM
+  url: https://raw.githubusercontent.com/sinavm/SVM/main/subscriptions/xray/normal/mix
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 108
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★432，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+- id: zhuhaiuk/free-nodes
+  url: https://raw.githubusercontent.com/zhuhaiuk/free-nodes/main/nodes.txt
+  kind: github
+  status: active
+  format: base64-uri
+  yield: 17
+  types:
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★379，搜索词「free v2ray nodes」）
+  tags:
+  - discovered
+  reach: both
+- id: ovmvo/FreeSub
+  url: https://raw.githubusercontent.com/ovmvo/FreeSub/main/sub/permanent/mihomo.yaml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 47
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★348）
+  tags:
+  - discovered
+  reach: both
+- id: cbusifabcap/daily_free_vpn
+  url: https://raw.githubusercontent.com/cbusifabcap/daily_free_vpn/main/Z.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 238
+  types:
+  - hysteria2
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★368）
+  tags:
+  - discovered
+  reach: both
+- id: Mahdi0024/ProxyCollector
+  url: https://raw.githubusercontent.com/Mahdi0024/ProxyCollector/master/sub/proxies.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 118
+  types:
+  - ss
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★330，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+- id: F0rc3Run/F0rc3Run
+  url: https://raw.githubusercontent.com/F0rc3Run/F0rc3Run/main/Best-Results/clash.yaml
+  kind: github
+  status: active
+  format: clash-yaml
+  yield: 403
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★321，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+- id: jichangx/free-nodes
+  url: https://raw.githubusercontent.com/jichangx/free-nodes/refs/heads/main/v.txt
+  kind: github
+  status: candidate
+  format: fetch:HTTP 404
+  yield: 0
+  types: []
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★206，搜索词「free v2ray nodes」） ｜ 本次探测为 0
+  tags:
+  - discovered
+- id: DukeMehdi/FreeList-V2ray-Configs
+  url: https://raw.githubusercontent.com/DukeMehdi/FreeList-V2ray-Configs/main/Configs/All-DukeMehdi-Configs.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 967
+  types:
+  - ss
+  - trojan
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★209，搜索词「کانفیگ رایگان」）
+  tags:
+  - discovered
+  reach: both
+- id: HakurouKen/free-node
+  url: https://raw.githubusercontent.com/HakurouKen/free-node/main/public
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 113
+  types:
+  - ss
+  - trojan
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★180，搜索词「free v2ray nodes」）
+  tags:
+  - discovered
+  reach: both
+- id: nyeinkokoaung404/V2ray-Configs
+  url: https://raw.githubusercontent.com/nyeinkokoaung404/V2ray-Configs/main/All_Configs_Sub.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 4375
+  types:
+  - ss
+  - ssr
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★201，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 4,375 但真连通过率仅 2.2%（16/736），典型大合集，占用采集和检测时间
+- id: Danialsamadi/v2go
+  url: https://raw.githubusercontent.com/Danialsamadi/v2go/main/AllConfigsSub.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 564
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★155，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+- id: MahanKenway/Freedom-V2Ray
+  url: https://raw.githubusercontent.com/MahanKenway/Freedom-V2Ray/main/configs/mix.txt
+  kind: github
+  status: archived
+  format: plain-uri
+  yield: 1702
+  types:
+  - ss
+  - trojan
+  - vless
+  - vmess
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★118，搜索词「v2ray subscription」）
+  tags:
+  - discovered
+  reach: both
+  archived_at: '2026-10-28'
+  archive_reason: 产量 1,702 但真连通过率仅 1.7%（15/875），典型大合集，占用采集和检测时间
+- id: wenxig/free-nodes-sub
+  url: https://raw.githubusercontent.com/wenxig/free-nodes-sub/main/data/sub.txt
+  kind: github
+  status: active
+  format: plain-uri
+  yield: 20
+  types:
+  - ss
+  - vless
+  freq: unknown
+  last_verified: '2026-10-28'
+  note: discover 自动发现（★107，搜索词「free v2ray nodes」）
+  tags:
+  - discovered
+  reach: both
+- id: t.me/tootffarangi2
+  url: https://t.me/s/tootffarangi2
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 272
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，272 条）
+  tags:
+  - telegram
+- id: t.me/configv2rayng
+  url: https://t.me/s/configv2rayng
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 234
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，234 条）
+  tags:
+  - telegram
+- id: t.me/tarkshodeh
+  url: https://t.me/s/tarkshodeh
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 214
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，214 条）
+  tags:
+  - telegram
+- id: t.me/vpsave
+  url: https://t.me/s/vpsave
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 202
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，202 条）
+  tags:
+  - telegram
+- id: t.me/meliproxyy
+  url: https://t.me/s/meliproxyy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 201
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，201 条）
+  tags:
+  - telegram
+- id: t.me/Farah_VPN
+  url: https://t.me/s/Farah_VPN
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 200
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，200 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_ng
+  url: https://t.me/s/v2ray_ng
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 172
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，172 条）
+  tags:
+  - telegram
+- id: t.me/v2rayng3
+  url: https://t.me/s/v2rayng3
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 172
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，172 条）
+  tags:
+  - telegram
+- id: t.me/soskeynet
+  url: https://t.me/s/soskeynet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 167
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，167 条）
+  tags:
+  - telegram
+- id: t.me/leviconfigs
+  url: https://t.me/s/leviconfigs
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 165
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，165 条）
+  tags:
+  - telegram
+- id: t.me/v2ray313
+  url: https://t.me/s/v2ray313
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 162
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，162 条）
+  tags:
+  - telegram
+- id: t.me/prrofile_purple
+  url: https://t.me/s/prrofile_purple
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 154
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，154 条）
+  tags:
+  - telegram
+- id: t.me/i10vpn
+  url: https://t.me/s/i10vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 150
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，150 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_configs_pools
+  url: https://t.me/s/v2ray_configs_pools
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 146
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，146 条）
+  tags:
+  - telegram
+- id: t.me/father_vpn
+  url: https://t.me/s/father_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 140
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，140 条）
+  tags:
+  - telegram
+- id: t.me/soskeynets
+  url: https://t.me/s/soskeynets
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 136
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，136 条）
+  tags:
+  - telegram
+- id: t.me/daily_configs
+  url: https://t.me/s/daily_configs
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 135
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，135 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_confiig
+  url: https://t.me/s/v2ray_confiig
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 129
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，129 条）
+  tags:
+  - telegram
+- id: t.me/icv2ray
+  url: https://t.me/s/icv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 124
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，124 条）
+  tags:
+  - telegram
+- id: t.me/proxy_online_net
+  url: https://t.me/s/proxy_online_net
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 124
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，124 条）
+  tags:
+  - telegram
+- id: t.me/pass_net
+  url: https://t.me/s/pass_net
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 120
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，120 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_phoenix
+  url: https://t.me/s/v2ray_phoenix
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 118
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，118 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_alpha
+  url: https://t.me/s/v2ray_alpha
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 116
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，116 条）
+  tags:
+  - telegram
+- id: t.me/migmigvpnshop
+  url: https://t.me/s/migmigvpnshop
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 102
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，102 条）
+  tags:
+  - telegram
+- id: t.me/bigsmoke_config
+  url: https://t.me/s/bigsmoke_config
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 101
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，101 条）
+  tags:
+  - telegram
+- id: t.me/v2raysaman
+  url: https://t.me/s/v2raysaman
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 100
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，100 条）
+  tags:
+  - telegram
+- id: t.me/farazv2ray
+  url: https://t.me/s/farazv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 99
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，99 条）
+  tags:
+  - telegram
+- id: t.me/hopev2ray
+  url: https://t.me/s/hopev2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 98
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，98 条）
+  tags:
+  - telegram
+- id: t.me/marambashi
+  url: https://t.me/s/marambashi
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 82
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，82 条）
+  tags:
+  - telegram
+- id: t.me/proxymtalpha
+  url: https://t.me/s/proxymtalpha
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 82
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，82 条）
+  tags:
+  - telegram
+- id: t.me/fastkanfig
+  url: https://t.me/s/fastkanfig
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 79
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，79 条）
+  tags:
+  - telegram
+- id: t.me/kafing_2
+  url: https://t.me/s/kafing_2
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 78
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，78 条）
+  tags:
+  - telegram
+- id: t.me/vpnine1
+  url: https://t.me/s/vpnine1
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 78
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，78 条）
+  tags:
+  - telegram
+- id: t.me/configprxy
+  url: https://t.me/s/configprxy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 77
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，77 条）
+  tags:
+  - telegram
+- id: t.me/filtershekan_channel
+  url: https://t.me/s/filtershekan_channel
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 73
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，73 条）
+  tags:
+  - telegram
+- id: t.me/hope_net
+  url: https://t.me/s/hope_net
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 73
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，73 条）
+  tags:
+  - telegram
+- id: t.me/mtmvpn
+  url: https://t.me/s/mtmvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 73
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，73 条）
+  tags:
+  - telegram
+- id: t.me/hex_proxy
+  url: https://t.me/s/hex_proxy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 72
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，72 条）
+  tags:
+  - telegram
+- id: t.me/onlineservicemmd
+  url: https://t.me/s/onlineservicemmd
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 72
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，72 条）
+  tags:
+  - telegram
+- id: t.me/tootffarangi
+  url: https://t.me/s/tootffarangi
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 72
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，72 条）
+  tags:
+  - telegram
+- id: t.me/filembad
+  url: https://t.me/s/filembad
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 70
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，70 条）
+  tags:
+  - telegram
+- id: t.me/kurdconfig
+  url: https://t.me/s/kurdconfig
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 70
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，70 条）
+  tags:
+  - telegram
+- id: t.me/b2hub
+  url: https://t.me/s/b2hub
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 69
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，69 条）
+  tags:
+  - telegram
+- id: t.me/vconfing
+  url: https://t.me/s/vconfing
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 68
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，68 条）
+  tags:
+  - telegram
+- id: t.me/freakconfig
+  url: https://t.me/s/freakconfig
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 67
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，67 条）
+  tags:
+  - telegram
+- id: t.me/freeonlinevpn
+  url: https://t.me/s/freeonlinevpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 61
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，61 条）
+  tags:
+  - telegram
+- id: t.me/shh_proxy
+  url: https://t.me/s/shh_proxy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 61
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，61 条）
+  tags:
+  - telegram
+- id: t.me/v2rayng_fast
+  url: https://t.me/s/v2rayng_fast
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 61
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，61 条）
+  tags:
+  - telegram
+- id: t.me/mdvpnsec
+  url: https://t.me/s/mdvpnsec
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 59
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，59 条）
+  tags:
+  - telegram
+- id: t.me/express_freevpn
+  url: https://t.me/s/express_freevpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 57
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，57 条）
+  tags:
+  - telegram
+- id: t.me/nofiltering2
+  url: https://t.me/s/nofiltering2
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 57
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，57 条）
+  tags:
+  - telegram
+- id: t.me/vistav2ray
+  url: https://t.me/s/vistav2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 57
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，57 条）
+  tags:
+  - telegram
+- id: t.me/masterserver1
+  url: https://t.me/s/masterserver1
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 55
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，55 条）
+  tags:
+  - telegram
+- id: t.me/sora1co
+  url: https://t.me/s/sora1co
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 55
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，55 条）
+  tags:
+  - telegram
+- id: t.me/appsooner
+  url: https://t.me/s/appsooner
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 52
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，52 条）
+  tags:
+  - telegram
+- id: t.me/v2raybaaz
+  url: https://t.me/s/v2raybaaz
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 52
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，52 条）
+  tags:
+  - telegram
+- id: t.me/vpnsal
+  url: https://t.me/s/vpnsal
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 50
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，50 条）
+  tags:
+  - telegram
+- id: t.me/azarbayjab1
+  url: https://t.me/s/azarbayjab1
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 48
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，48 条）
+  tags:
+  - telegram
+- id: t.me/vegaas_vpn
+  url: https://t.me/s/vegaas_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 47
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，47 条）
+  tags:
+  - telegram
+- id: t.me/mehrosaboran
+  url: https://t.me/s/mehrosaboran
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 44
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，44 条）
+  tags:
+  - telegram
+- id: t.me/surfboardv2ray
+  url: https://t.me/s/surfboardv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 43
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，43 条）
+  tags:
+  - telegram
+- id: t.me/vasl_bashim
+  url: https://t.me/s/vasl_bashim
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 43
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，43 条）
+  tags:
+  - telegram
+- id: t.me/confiig_hub
+  url: https://t.me/s/confiig_hub
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 42
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，42 条）
+  tags:
+  - telegram
+- id: t.me/cxrolvpn
+  url: https://t.me/s/cxrolvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 42
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，42 条）
+  tags:
+  - telegram
+- id: t.me/expressvpn_420
+  url: https://t.me/s/expressvpn_420
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 42
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，42 条）
+  tags:
+  - telegram
+- id: t.me/nexus_panell
+  url: https://t.me/s/nexus_panell
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 41
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，41 条）
+  tags:
+  - telegram
+- id: t.me/V2All
+  url: https://t.me/s/V2All
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 40
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，40 条）
+  tags:
+  - telegram
+- id: t.me/ppal03
+  url: https://t.me/s/ppal03
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 40
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，40 条）
+  tags:
+  - telegram
+- id: t.me/chillguy_vpn
+  url: https://t.me/s/chillguy_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 39
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，39 条）
+  tags:
+  - telegram
+- id: t.me/irconfiig
+  url: https://t.me/s/irconfiig
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 39
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，39 条）
+  tags:
+  - telegram
+- id: t.me/iran_v2ray1
+  url: https://t.me/s/iran_v2ray1
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 39
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，39 条）
+  tags:
+  - telegram
+- id: t.me/pirozi_argap
+  url: https://t.me/s/pirozi_argap
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 38
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，38 条）
+  tags:
+  - telegram
+- id: t.me/vmesskhodam
+  url: https://t.me/s/vmesskhodam
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 38
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，38 条）
+  tags:
+  - telegram
+- id: t.me/vpn_mafia
+  url: https://t.me/s/vpn_mafia
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 38
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，38 条）
+  tags:
+  - telegram
+- id: t.me/customvpnserver
+  url: https://t.me/s/customvpnserver
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 37
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，37 条）
+  tags:
+  - telegram
+- id: t.me/nap_v2ray
+  url: https://t.me/s/nap_v2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 37
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，37 条）
+  tags:
+  - telegram
+- id: t.me/isvvpn
+  url: https://t.me/s/isvvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 35
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，35 条）
+  tags:
+  - telegram
+- id: t.me/bored_vpn
+  url: https://t.me/s/bored_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 33
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，33 条）
+  tags:
+  - telegram
+- id: t.me/irdusti
+  url: https://t.me/s/irdusti
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 33
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，33 条）
+  tags:
+  - telegram
+- id: t.me/prisonvpnc
+  url: https://t.me/s/prisonvpnc
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 33
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，33 条）
+  tags:
+  - telegram
+- id: t.me/hibyevpnn
+  url: https://t.me/s/hibyevpnn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 32
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，32 条）
+  tags:
+  - telegram
+- id: t.me/selinc
+  url: https://t.me/s/selinc
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 28
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，28 条）
+  tags:
+  - telegram
+- id: t.me/capoit
+  url: https://t.me/s/capoit
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 27
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，27 条）
+  tags:
+  - telegram
+- id: t.me/cnetvpn
+  url: https://t.me/s/cnetvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 27
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，27 条）
+  tags:
+  - telegram
+- id: t.me/hollowcon
+  url: https://t.me/s/hollowcon
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 27
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，27 条）
+  tags:
+  - telegram
+- id: t.me/ghand_sheken
+  url: https://t.me/s/ghand_sheken
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 26
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，26 条）
+  tags:
+  - telegram
+- id: t.me/itv2ray
+  url: https://t.me/s/itv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 25
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，25 条）
+  tags:
+  - telegram
+- id: t.me/arshiavpn12
+  url: https://t.me/s/arshiavpn12
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 24
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，24 条）
+  tags:
+  - telegram
+- id: t.me/azaranv2ray
+  url: https://t.me/s/azaranv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 24
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，24 条）
+  tags:
+  - telegram
+- id: t.me/atovpn
+  url: https://t.me/s/atovpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 23
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，23 条）
+  tags:
+  - telegram
+- id: t.me/net2ray
+  url: https://t.me/s/net2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 23
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，23 条）
+  tags:
+  - telegram
+- id: t.me/azarakhsh_proxy
+  url: https://t.me/s/azarakhsh_proxy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 22
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，22 条）
+  tags:
+  - telegram
+- id: t.me/alfred_config
+  url: https://t.me/s/alfred_config
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 21
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，21 条）
+  tags:
+  - telegram
+- id: t.me/qara_atayi
+  url: https://t.me/s/qara_atayi
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 21
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，21 条）
+  tags:
+  - telegram
+- id: t.me/v2raymelliii
+  url: https://t.me/s/v2raymelliii
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 21
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，21 条）
+  tags:
+  - telegram
+- id: t.me/outline_ir
+  url: https://t.me/s/outline_ir
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 20
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，20 条）
+  tags:
+  - telegram
+- id: t.me/vpnfail_v2ray
+  url: https://t.me/s/vpnfail_v2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 20
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，20 条）
+  tags:
+  - telegram
+- id: t.me/atlas_v2vpn
+  url: https://t.me/s/atlas_v2vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/binextify
+  url: https://t.me/s/binextify
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/configshub
+  url: https://t.me/s/configshub
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/daredevill_404
+  url: https://t.me/s/daredevill_404
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/hatunnel_vpn
+  url: https://t.me/s/hatunnel_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/upsetvpn
+  url: https://t.me/s/upsetvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/v2xnet
+  url: https://t.me/s/v2xnet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/vmesc
+  url: https://t.me/s/vmesc
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/vmess_ir
+  url: https://t.me/s/vmess_ir
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 19
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，19 条）
+  tags:
+  - telegram
+- id: t.me/ai_duet
+  url: https://t.me/s/ai_duet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 18
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，18 条）
+  tags:
+  - telegram
+- id: t.me/configfori
+  url: https://t.me/s/configfori
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 18
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，18 条）
+  tags:
+  - telegram
+- id: t.me/eliv2ray
+  url: https://t.me/s/eliv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 18
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，18 条）
+  tags:
+  - telegram
+- id: t.me/tanhanet
+  url: https://t.me/s/tanhanet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 18
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，18 条）
+  tags:
+  - telegram
+- id: t.me/vpnbaz
+  url: https://t.me/s/vpnbaz
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 18
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，18 条）
+  tags:
+  - telegram
+- id: t.me/bigavpn
+  url: https://t.me/s/bigavpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 17
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，17 条）
+  tags:
+  - telegram
+- id: t.me/configv2rayforfree
+  url: https://t.me/s/configv2rayforfree
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 16
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，16 条）
+  tags:
+  - telegram
+- id: t.me/gozargahazad
+  url: https://t.me/s/gozargahazad
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 16
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，16 条）
+  tags:
+  - telegram
+- id: t.me/netmellianti
+  url: https://t.me/s/netmellianti
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 16
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，16 条）
+  tags:
+  - telegram
+- id: t.me/iran_v2ping
+  url: https://t.me/s/iran_v2ping
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 15
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，15 条）
+  tags:
+  - telegram
+- id: t.me/napsternetvirani
+  url: https://t.me/s/napsternetvirani
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 15
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，15 条）
+  tags:
+  - telegram
+- id: t.me/v2rayls
+  url: https://t.me/s/v2rayls
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 15
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，15 条）
+  tags:
+  - telegram
+- id: t.me/privatevpns
+  url: https://t.me/s/privatevpns
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 14
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，14 条）
+  tags:
+  - telegram
+- id: t.me/sylphnet
+  url: https://t.me/s/sylphnet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 14
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，14 条）
+  tags:
+  - telegram
+- id: t.me/v2ra_config
+  url: https://t.me/s/v2ra_config
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 14
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，14 条）
+  tags:
+  - telegram
+- id: t.me/v2mystery
+  url: https://t.me/s/v2mystery
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 13
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，13 条）
+  tags:
+  - telegram
+- id: t.me/vpnjey
+  url: https://t.me/s/vpnjey
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 13
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，13 条）
+  tags:
+  - telegram
+- id: t.me/webshecan
+  url: https://t.me/s/webshecan
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 13
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，13 条）
+  tags:
+  - telegram
+- id: t.me/alo_v2rayng
+  url: https://t.me/s/alo_v2rayng
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 12
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，12 条）
+  tags:
+  - telegram
+- id: t.me/amvng
+  url: https://t.me/s/amvng
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 12
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，12 条）
+  tags:
+  - telegram
+- id: t.me/bisto4_service
+  url: https://t.me/s/bisto4_service
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 12
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，12 条）
+  tags:
+  - telegram
+- id: t.me/cephalon_ala
+  url: https://t.me/s/cephalon_ala
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 12
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，12 条）
+  tags:
+  - telegram
+- id: t.me/gozargahvpn
+  url: https://t.me/s/gozargahvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 12
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，12 条）
+  tags:
+  - telegram
+- id: t.me/ansooyefilter
+  url: https://t.me/s/ansooyefilter
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 11
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，11 条）
+  tags:
+  - telegram
+- id: t.me/fear_config
+  url: https://t.me/s/fear_config
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 11
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，11 条）
+  tags:
+  - telegram
+- id: t.me/mainv2ray
+  url: https://t.me/s/mainv2ray
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 11
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，11 条）
+  tags:
+  - telegram
+- id: t.me/turboconfigs
+  url: https://t.me/s/turboconfigs
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 10
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，10 条）
+  tags:
+  - telegram
+- id: t.me/ehsawn8
+  url: https://t.me/s/ehsawn8
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 9
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，9 条）
+  tags:
+  - telegram
+- id: t.me/faultpass
+  url: https://t.me/s/faultpass
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 9
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，9 条）
+  tags:
+  - telegram
+- id: t.me/maconnectt
+  url: https://t.me/s/maconnectt
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 9
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，9 条）
+  tags:
+  - telegram
+- id: t.me/v2ray_fark
+  url: https://t.me/s/v2ray_fark
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 9
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，9 条）
+  tags:
+  - telegram
+- id: t.me/vpncostumer
+  url: https://t.me/s/vpncostumer
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 9
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，9 条）
+  tags:
+  - telegram
+- id: t.me/begoo_vpn
+  url: https://t.me/s/begoo_vpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 8
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，8 条）
+  tags:
+  - telegram
+- id: t.me/cfox_server
+  url: https://t.me/s/cfox_server
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 8
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，8 条）
+  tags:
+  - telegram
+- id: t.me/configforvpn
+  url: https://t.me/s/configforvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 8
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，8 条）
+  tags:
+  - telegram
+- id: t.me/bird_angry
+  url: https://t.me/s/bird_angry
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 7
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，7 条）
+  tags:
+  - telegram
+- id: t.me/jkvpn
+  url: https://t.me/s/jkvpn
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 7
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，7 条）
+  tags:
+  - telegram
+- id: t.me/rk_vps
+  url: https://t.me/s/rk_vps
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 7
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，7 条）
+  tags:
+  - telegram
+- id: t.me/zyzzzoao
+  url: https://t.me/s/zyzzzoao
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 7
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，7 条）
+  tags:
+  - telegram
+- id: t.me/awlix_ir
+  url: https://t.me/s/awlix_ir
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/brayirani
+  url: https://t.me/s/brayirani
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/config7x
+  url: https://t.me/s/config7x
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/maznet
+  url: https://t.me/s/maznet
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/narcod_ping
+  url: https://t.me/s/narcod_ping
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/probabblynot
+  url: https://t.me/s/probabblynot
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/raydikalx
+  url: https://t.me/s/raydikalx
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/soonteam
+  url: https://t.me/s/soonteam
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 6
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，6 条）
+  tags:
+  - telegram
+- id: t.me/confing_v2rayy
+  url: https://t.me/s/confing_v2rayy
+  kind: telegram
+  status: active
+  format: tg-html
+  yield: 5
+  types: []
+  freq: realtime
+  reach: proxy
+  last_verified: '2026-10-28'
+  note: TG 频道，网页版直接抓（tg_scan 发现，5 条）
+  tags:
+  - telegram

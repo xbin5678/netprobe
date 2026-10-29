@@ -1,0 +1,11 @@
+[Unit]
+Description=每天 04:17 跑一次数据采集流水线
+
+[Timer]
+OnCalendar=*-*-* 04:17:00
+RandomizedDelaySec=15m
+Persistent=true
+Unit=nodehub-update.service
+
+[Install]
+WantedBy=timers.target

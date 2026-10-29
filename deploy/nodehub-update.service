@@ -1,0 +1,16 @@
+[Unit]
+Description=数据采集流水线 · 每日更新（无界面跑一次 run.py all）
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/nodehub
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONIOENCODING=utf-8
+ExecStart=/opt/nodehub/.venv/bin/python /opt/nodehub/run.py all --config /opt/nodehub/config.yaml
+# 75 = 有别的任务在跑（网页点了按钮 / 上一次还没跑完），属于正常跳过，不算失败
+SuccessExitStatus=75
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=3h

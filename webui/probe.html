@@ -1,0 +1,1000 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f6fa">
+<title>订阅测速 · 数据采集流水线</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%232563eb'/%3E%3Cpath d='M7 22l6-10 4 6 3-4 5 8' stroke='%23fff' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --line:#e3e8f0; --text:#1f2937; --muted:#6b7280;
+  --faint:#9aa3af; --accent:#2563eb; --accent-2:#1d4ed8; --green:#16a34a;
+  --red:#dc2626; --amber:#d97706; --chip:#eef2f9;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--text);min-height:100vh;
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+       "Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 40px}
+
+header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{font-size:19px;margin:0;letter-spacing:.2px;font-weight:700}
+h1 small{font-size:12px;color:var(--muted);font-weight:400;margin-left:6px}
+.spacer{flex:1}
+a.back{font-size:12.5px;color:var(--accent);text-decoration:none;border:1px solid var(--line);
+  background:var(--card);border-radius:8px;padding:5px 11px}
+a.back:hover{background:#eef4ff}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:999px;padding:3px 10px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint);flex:none}
+.dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.14)}
+.dot.live{background:var(--accent);animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-bottom:12px}
+.card h2{font-size:13.5px;margin:0 0 10px;font-weight:650;letter-spacing:.2px}
+.card h2 .n{display:inline-flex;width:18px;height:18px;border-radius:6px;background:var(--chip);
+  color:var(--muted);font-size:11px;align-items:center;justify-content:center;margin-right:7px;
+  vertical-align:1px;font-weight:600}
+
+input[type=text],input[type=url],input[type=number],select{
+  font:inherit;color:inherit;background:#fff;border:1px solid var(--line);
+  border-radius:8px;padding:7px 10px;outline:none;min-width:0}
+input[type=text]:focus,input[type=url]:focus,input[type=number]:focus,select:focus{
+  border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+button{font:inherit;border:1px solid var(--line);background:#fff;color:var(--text);
+  border-radius:8px;padding:7px 13px;cursor:pointer;transition:.12s}
+button:hover:not(:disabled){border-color:#c9d5e8;background:#f8fafd}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+button.primary:hover:not(:disabled){background:var(--accent-2);border-color:var(--accent-2)}
+button.danger{color:var(--red);border-color:#f0c9c9}
+button.danger:hover:not(:disabled){background:#fef2f2;border-color:#e7a9a9}
+button.sm{padding:4px 10px;font-size:12.5px;border-radius:7px}
+button.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+button.ghost:hover:not(:disabled){background:var(--chip)}
+
+/* 分段选择器 */
+.seg{display:inline-flex;gap:4px;background:var(--chip);padding:2px;border-radius:9px}
+.seg button{border-color:transparent;background:transparent;padding:3px 10px;
+  font-size:12.5px;border-radius:7px;color:var(--muted)}
+.seg button.on{background:#fff;color:var(--accent);font-weight:650;
+  box-shadow:0 1px 3px rgba(15,23,42,.12)}
+
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.subrow{display:flex;gap:8px;align-items:center;margin-top:9px;flex-wrap:wrap}
+.subrow input[type=url]{flex:1;min-width:260px}
+label.f{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)}
+label.f select,label.f input{padding:5px 8px;font-size:13px}
+
+.hint{font-size:12.5px;color:var(--muted);margin:8px 0 0;line-height:1.65}
+.hint b{color:var(--text);font-weight:600}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:5px;
+  background:var(--chip);color:var(--muted);font-family:var(--mono)}
+
+/* 筛选条 */
+.fbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 10px;
+  padding:7px 10px;background:#fafbfd;border:1px solid var(--line);border-radius:9px}
+.fbar .seg button b{font-weight:700;color:var(--accent);margin-left:4px;
+  font-variant-numeric:tabular-nums}
+.fbar .seg button:not(.on) b{color:var(--faint)}
+.fbar input[type=number]{padding:5px 8px;font-size:13px}
+.fbar input[type=text]{padding:5px 8px;font-size:13px}
+.fbar .fcount{font-size:12.5px;color:var(--muted);font-variant-numeric:tabular-nums}
+.fbar .fcount b{color:var(--text);font-weight:650}
+.fbar .fcount .hit{color:var(--green);font-weight:650}
+.fbar .seg button.hot{color:var(--green)}
+.fbar .seg button.hot.on{color:var(--green)}
+
+/* 进度 */
+.progress{margin-top:12px}
+.prow{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:6px}
+.prow .phase{color:var(--text);font-weight:600}
+.bar{height:6px;background:var(--chip);border-radius:99px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#4f8ef7);
+  border-radius:99px;transition:width .3s}
+.detail{font-size:12.5px;color:var(--muted);margin-top:6px}
+
+/* 日志 */
+.logbox{margin-top:10px;border:1px solid var(--line);border-radius:9px;background:#0f172a;
+  max-height:230px;overflow:auto;padding:9px 11px;font:12px/1.6 var(--mono);
+  color:#c9d6e8;white-space:pre-wrap;word-break:break-all;display:none}
+.logbox.show{display:block}
+.logbox .ok{color:#5eead4}
+.logbox .err{color:#fca5a5}
+.logbox .warn{color:#fcd34d}
+.logbox .dim{color:#7c8aa0}
+
+/* 表格 */
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:7px 9px;text-align:left;border-bottom:1px solid #eef1f6;white-space:nowrap}
+th{font-size:12px;color:var(--muted);font-weight:600;background:#fafbfd;position:sticky;top:0;z-index:1}
+th.num,td.num{text-align:right}
+tbody tr:hover{background:#f8fafd}
+tbody tr.clickable{cursor:pointer}
+td.mono{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.ell{display:inline-block;max-width:220px;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;vertical-align:bottom}
+.nm{font-weight:550}
+.nm .sub{display:block;font-size:11.5px;color:var(--faint);font-weight:400;
+  font-family:var(--mono);margin-top:1px}
+th.sel,td.sel{width:30px;padding-right:0}
+td.sel input,th.sel input{margin:0;cursor:pointer;accent-color:var(--accent)}
+
+.ok-c{color:var(--green)}
+.no-c{color:var(--red)}
+.na-c{color:var(--faint)}
+.hi{color:var(--green);font-weight:600}
+.mid{color:var(--amber)}
+.spd{display:inline-flex;align-items:center;gap:6px;justify-content:flex-end}
+.spd .v{font-weight:650;font-variant-numeric:tabular-nums}
+.spd .u{font-size:11px;color:var(--faint)}
+.sbar{width:46px;height:5px;background:var(--chip);border-radius:99px;overflow:hidden;flex:none}
+.sbar i{display:block;height:100%;background:var(--green);border-radius:99px}
+
+.selbar{display:none;align-items:center;gap:8px;flex-wrap:wrap;margin:10px 0;
+  padding:8px 11px;background:#eef4ff;border:1px solid #cfdffb;border-radius:9px;
+  font-size:12.5px;color:var(--accent)}
+.selbar.on{display:flex}
+.selbar #selCount{font-weight:600;margin-right:2px}
+.selbar button:not(.primary){background:#fff}
+
+.emptybox{display:none;text-align:center;color:var(--muted);font-size:13px;
+  padding:34px 16px;line-height:1.8}
+.emptybox.show{display:block}
+
+/* 历史 */
+.runs{display:grid;gap:8px}
+.run{display:flex;align-items:center;gap:10px;padding:9px 12px;border:1px solid var(--line);
+  border-radius:10px;background:#fff;flex-wrap:wrap}
+.run.on{border-color:var(--accent);background:#f7faff;box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+.run .t{font-weight:600;font-size:13px}
+.run .meta{font-size:11.5px;color:var(--muted);font-family:var(--mono)}
+.run .acts{margin-left:auto;display:flex;gap:6px}
+.badge{font-size:11px;padding:1px 7px;border-radius:99px;background:var(--chip);color:var(--muted)}
+.badge.done{background:#ecfdf5;color:#047857}
+.badge.running{background:#eff6ff;color:#1d4ed8}
+.badge.error{background:#fef2f2;color:#b91c1c}
+
+/* 弹窗 */
+#mask{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;
+  align-items:center;justify-content:center;z-index:60;padding:20px}
+#mask.on{display:flex}
+.dlg{background:#fff;border-radius:13px;padding:18px 20px;width:100%;max-width:420px;
+  box-shadow:0 20px 50px rgba(15,23,42,.25)}
+.dlg h3{margin:0 0 10px;font-size:15px}
+.dlg input{width:100%;margin-bottom:14px}
+.dlg .b{display:flex;gap:8px;justify-content:flex-end}
+
+#toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,20px);
+  background:#111827;color:#fff;font-size:13px;padding:9px 16px;border-radius:9px;
+  opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:70;max-width:80vw}
+#toast.show{opacity:.96;transform:translate(-50%,0)}
+
+@media (max-width:1150px){ .hide-md{display:none} }
+@media (max-width:760px){
+  .wrap{padding:14px 12px 32px}
+  h1{font-size:17px}
+  .hide-sm{display:none}
+  .card{padding:12px}
+  th,td{padding:6px 7px}
+  .subrow input[type=url]{min-width:0;width:100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>订阅测速<small>贴链接 · 测可用 · 测速度 · 存历史</small></h1>
+    <span class="pill"><i class="dot" id="dot"></i><span id="dotText">空闲</span></span>
+    <span class="spacer"></span>
+    <a class="back" href="/">← 回主界面</a>
+  </header>
+
+  <!-- 1 订阅 -->
+  <section class="card">
+    <h2><span class="n">1</span>订阅链接</h2>
+    <div class="subrow">
+      <input type="url" id="fUrl" placeholder="https://example.com/api/v1/client/subscribe?token=xxx"
+             autocomplete="off" spellcheck="false">
+      <button class="primary" id="btnFetch">拉取节点</button>
+    </div>
+    <div class="subrow">
+      <label class="f">备注名
+        <input type="text" id="fTitle" placeholder="不填就用订阅地址" style="width:230px">
+      </label>
+      <span class="hint" style="margin:0">
+        支持 <b>Clash / sing-box / base64 / 明文 / Surge / 圈X</b>，格式自动识别
+      </span>
+    </div>
+  </section>
+
+  <!-- 2 检测 -->
+  <section class="card">
+    <h2><span class="n">2</span>检测</h2>
+    <div class="row">
+      <button class="primary" id="btnAuto">▶ 自动检测</button>
+      <button id="btnFast">快速（只测端口）</button>
+      <button id="btnDeep">深度（测延迟）</button>
+      <button id="btnSpeed">测下载速度</button>
+      <button class="danger" id="btnStop" disabled>■ 停止</button>
+      <span class="spacer"></span>
+      <button class="ghost sm" id="btnToggleLog">显示日志</button>
+    </div>
+    <div class="subrow">
+      <label class="f">测速文件
+        <span class="seg" id="segSize">
+          <button class="sm on" data-size="10">10 MB</button>
+          <button class="sm" data-size="20">20 MB</button>
+          <button class="sm" data-size="50">50 MB</button>
+        </span>
+      </label>
+      <label class="f">最多测
+        <input type="number" id="fMax" value="15" min="1" max="200" style="width:70px">
+        个节点
+      </label>
+    </div>
+    <p class="hint">
+      <b>自动检测</b> = 端口预筛 → 真实网页访问 → 给最快的 N 个节点测下载速度。
+      <b>快速</b>只连 TCP，几秒扫完，只说明端口开着；<b>深度</b>才验证能不能真的上网；
+      <b>测下载速度</b>会把节点按延迟排序，取前 N 个跑一遍。
+      测速文件越大越准，也越费流量：50MB × 15 个 ≈ 750MB。
+    </p>
+
+    <div class="progress">
+      <div class="prow">
+        <span class="phase" id="pPhase">就绪</span>
+        <span><span id="pPct">0%</span> · <span id="pTime">0s</span></span>
+      </div>
+      <div class="bar"><i id="pBar"></i></div>
+      <div class="detail" id="pDetail">贴一个订阅链接，点「拉取节点」开始。</div>
+    </div>
+    <div class="logbox" id="logBox"></div>
+  </section>
+
+  <!-- 3 节点 -->
+  <section class="card">
+    <h2><span class="n">3</span>节点 <span class="tag" id="nodeCount" style="margin-left:6px">-</span></h2>
+    <div class="fbar" id="fbar">
+      <span class="seg" id="segFilter">
+        <button class="sm on" data-f="all">全部</button>
+        <button class="sm hot" data-f="speed" title="测出下载速度的才是真的能跑流量">有下载速度<b id="cSpeed">0</b></button>
+        <button class="sm" data-f="ok">可用<b id="cOk">0</b></button>
+        <button class="sm" data-f="fail" title="连得上但下载测速失败">测速失败</button>
+      </span>
+      <label class="f">速度 ≥
+        <input type="number" id="fMinSpeed" value="0" min="0" max="500" step="0.5" style="width:64px">
+        MB/s
+      </label>
+      <input type="text" id="fSearch" placeholder="搜名字或地址" style="width:150px">
+      <span class="spacer"></span>
+      <span class="fcount" id="fCount">-</span>
+      <button class="sm" id="btnTestVisible" title="给当前筛选出来的这些节点测下载速度">测这些</button>
+    </div>
+    <p class="hint" id="speedTip" style="display:none;margin:0 0 10px">
+      TCP 通、延迟低只说明端口是开着的；<b>真正跑出了下载速度的才是能承载流量的节点</b>，
+      下面就是这一批，已经按快慢排好序。
+    </p>
+    <div class="selbar" id="selBar">
+      <span id="selCount">已选 0 个</span>
+      <button class="sm" id="btnSelFast">快速检测</button>
+      <button class="sm" id="btnSelDeep">深度检测</button>
+      <button class="sm" id="btnSelSpeed">测速</button>
+      <button class="sm danger" id="btnSelDel">删除</button>
+      <button class="sm ghost" id="btnSelClear">取消选择</button>
+    </div>
+    <div class="scroll">
+      <table id="tbl">
+        <thead><tr>
+          <th class="sel"><input type="checkbox" id="selAll" title="全选"></th>
+          <th>节点</th>
+          <th>协议</th>
+          <th class="num">TCP</th>
+          <th class="num">延迟</th>
+          <th class="num hide-sm">首字节</th>
+          <th class="num">下载速度</th>
+          <th>状态</th>
+          <th class="hide-sm">操作</th>
+        </tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div class="emptybox" id="empty">还没有节点。先在上面贴一个订阅链接拉取。</div>
+  </section>
+
+  <!-- 4 导出 -->
+  <section class="card">
+    <h2><span class="n">4</span>导出</h2>
+    <div class="row">
+      <label class="f">格式
+        <select id="fFmt">
+          <option value="clash">Clash 配置（完整）</option>
+          <option value="v2ray">base64 订阅（v2rayN/小火箭）</option>
+          <option value="plain">明文链接</option>
+          <option value="singbox">sing-box JSON</option>
+          <option value="surge">Surge</option>
+          <option value="qx">Quantumult X</option>
+        </select>
+      </label>
+      <label class="f">排序
+        <select id="fSort">
+          <option value="speed">按下载速度</option>
+          <option value="latency">按延迟</option>
+          <option value="id">按原始顺序</option>
+        </select>
+      </label>
+      <label class="f"><input type="checkbox" id="fOnlyOk" checked> 只导出可用的</label>
+      <label class="f"><input type="checkbox" id="fOnlySpeed"> 只导出有下载速度的</label>
+      <span class="spacer"></span>
+      <button id="btnCopy">复制</button>
+      <button class="primary" id="btnDownload">下载</button>
+    </div>
+    <p class="hint">
+      导出的节点名后面会带上测出来的速度，客户端里一眼能看出快慢。
+      <span id="expTip"></span>
+    </p>
+  </section>
+
+  <!-- 5 历史 -->
+  <section class="card">
+    <h2><span class="n">5</span>历史记录 <span class="tag" id="runCount" style="margin-left:6px">-</span></h2>
+    <div class="runs" id="runs"></div>
+    <div class="emptybox" id="runEmpty">还没有历史记录。每次拉取订阅都会自动存一条，之后可以回来接着测。</div>
+  </section>
+
+</div>
+
+<div id="mask">
+  <div class="dlg">
+    <h3 id="dlgTitle">改名</h3>
+    <input type="text" id="dlgInput" autocomplete="off">
+    <div class="b">
+      <button id="dlgCancel">取消</button>
+      <button class="primary" id="dlgOk">确定</button>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+
+const S = {
+  runId: null, nodes: [], sel: new Set(), runs: [],
+  size: 10, running: false, es: null, startedAt: 0, tick: null,
+  showLog: false, fmt: "",
+  filter: "all", minSpeed: 0, q: "",
+};
+
+const nf = (n) => (n == null ? "-" : Number(n).toLocaleString("zh-CN"));
+
+function toast(msg, ms) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), ms || 2600);
+}
+
+async function api(path, opt) {
+  const r = await fetch(path, Object.assign({ credentials: "same-origin" }, opt || {}));
+  if (r.status === 401) { location.href = "/"; throw new Error("unauthorized"); }
+  if (!r.ok) {
+    let msg = "HTTP " + r.status;
+    try { const j = await r.json(); if (j.error) msg = j.error; } catch (e) {}
+    throw new Error(msg);
+  }
+  return r.json();
+}
+
+function post(path, body) {
+  return api(path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body || {}),
+  });
+}
+
+/* ---------------- 弹窗 ---------------- */
+let dlgCb = null;
+function askText(title, value, cb) {
+  $("dlgTitle").textContent = title;
+  $("dlgInput").value = value || "";
+  $("mask").classList.add("on");
+  dlgCb = cb;
+  setTimeout(() => $("dlgInput").select(), 30);
+}
+function closeDlg() { $("mask").classList.remove("on"); dlgCb = null; }
+$("dlgCancel").onclick = closeDlg;
+$("dlgOk").onclick = () => {
+  const v = $("dlgInput").value.trim();
+  const cb = dlgCb;
+  closeDlg();
+  if (cb) cb(v);
+};
+$("dlgInput").onkeydown = (e) => {
+  if (e.key === "Enter") $("dlgOk").click();
+  if (e.key === "Escape") closeDlg();
+};
+$("mask").onclick = (e) => { if (e.target === $("mask")) closeDlg(); };
+
+/* ---------------- 格式化 ---------------- */
+function fmtSpeed(bps) {
+  if (!bps) return null;
+  const mb = bps / 1048576;
+  if (mb < 0.01) return "<0.01";   // 有速度但极小，别显示成 0.00 让人以为没测出来
+  return mb >= 10 ? mb.toFixed(1) : mb.toFixed(2);
+}
+function fmtTime(s) {
+  if (s == null) return "-";
+  return s < 1000 ? s + " ms" : (s / 1000).toFixed(2) + " s";
+}
+function ago(ts) {
+  if (!ts) return "-";
+  const t = new Date(ts.replace(" ", "T")).getTime();
+  if (!t) return ts;
+  const d = (Date.now() - t) / 1000;
+  if (d < 60) return "刚刚";
+  if (d < 3600) return Math.floor(d / 60) + " 分钟前";
+  if (d < 86400) return Math.floor(d / 3600) + " 小时前";
+  return Math.floor(d / 86400) + " 天前";
+}
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// 订阅里的节点名常常自带上一轮测出来的「123ms」「1.2MB/s」，
+// 跟这次测出来的数并排放会互相打架，显示时先摘掉
+const STALE = /\s+\d+(?:\.\d+)?\s*(?:ms|MB\/s)\b/gi;
+function cleanName(s) {
+  return String(s || "").replace(STALE, "").trim();
+}
+
+/* ---------------- 筛选 ----------------
+   关键判断：TCP 通 / 延迟低，只说明「能连上」；只有真正跑出了下载速度，
+   才说明这条链路能承载流量、是真能用的。所以「有下载速度」单独成一档。 */
+function speedMB(n) { return n && n.speed ? n.speed / 1048576 : 0; }
+
+function matchFilter(n) {
+  if (S.filter === "speed" && !n.speed) return false;
+  if (S.filter === "ok" && !n.ok) return false;
+  if (S.filter === "fail" && !n.serr) return false;
+  if (S.minSpeed > 0 && speedMB(n) < S.minSpeed) return false;
+  if (S.q) {
+    const hay = (n.name + " " + n.server + " " + n.type + " " + n.port).toLowerCase();
+    if (hay.indexOf(S.q) < 0) return false;
+  }
+  return true;
+}
+
+function visibleNodes() {
+  let rows = S.nodes.filter(matchFilter);
+  // 看「有下载速度」这一档时，按快慢排，最快的在最前面
+  if (S.filter === "speed" && !S.q) {
+    rows = rows.slice().sort((a, b) => (b.speed || 0) - (a.speed || 0));
+  }
+  return rows;
+}
+
+function syncCounts() {
+  const total = S.nodes.length;
+  const sp = S.nodes.filter((n) => n.speed).length;
+  const ok = S.nodes.filter((n) => n.ok).length;
+  $("cSpeed").textContent = sp;
+  $("cOk").textContent = ok;
+
+  $("nodeCount").textContent = total
+    ? `${total} 个 · ${sp} 有速度` + (S.fmt ? ` · ${S.fmt}` : "")
+    : "-";
+
+  const shown = visibleNodes().length;
+  const narrowed = S.filter !== "all" || S.minSpeed > 0 || !!S.q;
+  $("fCount").innerHTML = !total ? "-"
+    : narrowed
+      ? `显示 <b>${shown}</b> / ${total} 个`
+      : `共 <b>${total}</b> 个 · 其中 <span class="hit">${sp}</span> 个有下载速度`;
+
+  $("speedTip").style.display = (S.filter === "speed" && shown > 0) ? "" : "none";
+  return { total, sp, ok, shown };
+}
+
+function setFilter(f) {
+  S.filter = f;
+  document.querySelectorAll("#segFilter button").forEach(
+    (b) => b.classList.toggle("on", b.dataset.f === f));
+  renderNodes();
+}
+
+/* ---------------- 拉取订阅 ---------------- */
+async function fetchSub() {
+  const url = $("fUrl").value.trim();
+  if (!url) { toast("先填订阅链接"); return; }
+  const btn = $("btnFetch");
+  btn.disabled = true;
+  btn.textContent = "拉取中…";
+  try {
+    const d = await post("/api/probe/fetch", { url, title: $("fTitle").value.trim() });
+    toast(`解析出 ${d.total} 个节点（${d.fmt}）` + (d.dropped ? `，丢弃 ${d.dropped} 个` : ""));
+    $("fTitle").value = "";
+    await loadRuns();
+    await loadRun(d.id);
+  } catch (e) {
+    toast("拉取失败：" + e.message, 5000);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "拉取节点";
+  }
+}
+
+/* ---------------- 打开某条记录 ---------------- */
+async function loadRun(id) {
+  try {
+    const d = await api("/api/probe/run?id=" + id);
+    S.runId = id;
+    S.nodes = d.nodes;
+    S.sel.clear();
+    const r = d.run;
+    S.fmt = r.fmt || "";
+    if (!$("fUrl").value) $("fUrl").value = r.source;
+    renderNodes();
+    renderRuns();
+    const ok = d.nodes.filter((n) => n.ok).length;
+    const sp = d.nodes.filter((n) => n.speed).length;
+    $("pPhase").textContent = "已载入记录 #" + id;
+    $("pDetail").textContent =
+      `${d.nodes.length} 个节点，${ok} 个可用` +
+      (sp ? `，其中 ${sp} 个测出了下载速度（真能跑流量的）` : "，还没有测过下载速度") +
+      ` · 最后更新 ${r.updated_at}`;
+  } catch (e) {
+    toast("载入失败：" + e.message, 4000);
+  }
+}
+
+/* ---------------- 节点表格 ---------------- */
+function renderNodes() {
+  const tb = $("tbl").querySelector("tbody");
+  const rows = visibleNodes();
+  const c = syncCounts();
+
+  // 被筛掉的节点不要继续留在选中集合里，否则「测速」会悄悄测到看不见的节点
+  const visIds = new Set(rows.map((n) => n.id));
+  S.sel.forEach((id) => { if (!visIds.has(id)) S.sel.delete(id); });
+
+  const eb = $("empty");
+  if (!c.total) {
+    eb.textContent = "还没有节点。先在上面贴一个订阅链接拉取。";
+  } else if (!rows.length) {
+    eb.textContent = S.filter === "speed"
+      ? "这一批里还没有测出下载速度的节点。点上面「测下载速度」或右边「测这些」跑一遍。"
+      : "当前筛选没有符合条件的节点，换个条件试试。";
+  }
+  eb.classList.toggle("show", rows.length === 0);
+  $("tbl").closest(".scroll").style.display = rows.length ? "" : "none";
+  tb.innerHTML = "";
+  if (!rows.length) { syncSel(); updateExpTip(); return; }
+
+  // 速度条的刻度按全量最快的那条算，切换筛选时条长不会跳
+  const maxSpd = Math.max(1, ...S.nodes.map((r) => r.speed || 0));
+  rows.forEach((r, idx) => {
+    const lat = r.latency;
+    // 订阅里的节点名经常是空的，或者是「地址:端口」这种没信息量的，
+    // 这种情况自己生成一个 VMESS-001，比一串 IP 好认
+    let label = cleanName(r.name);
+    if (!label || label === r.server || label === r.server + ":" + r.port) {
+      label = r.type.toUpperCase() + "-" + String(idx + 1).padStart(3, "0");
+    }
+    const cls = lat == null ? "" : (lat < 800 ? "hi" : (lat < 2000 ? "mid" : ""));
+    const tcp = r.tcp_ok == null ? '<span class="na-c">-</span>'
+      : (r.tcp_ok ? `<span class="ok-c">${r.tcp_ms ? r.tcp_ms + "ms" : "通"}</span>`
+                  : '<span class="no-c">不通</span>');
+    const spd = r.speed
+      ? `<span class="spd"><span class="sbar"><i style="width:${
+          Math.max(4, Math.round(r.speed / maxSpd * 100))}%"></i></span>` +
+        `<span class="v">${fmtSpeed(r.speed)}</span><span class="u">MB/s</span></span>`
+      : (r.serr ? `<span class="no-c" title="${esc(r.serr)}">失败</span>`
+                : '<span class="na-c">-</span>');
+    const st = r.ok ? '<span class="ok-c">可用</span>'
+      : (r.err ? `<span class="no-c" title="${esc(r.err)}">${esc(r.err.slice(0, 12))}</span>`
+               : '<span class="na-c">未测</span>');
+
+    const tr = document.createElement("tr");
+    tr.className = "clickable";
+    tr.innerHTML =
+      `<td class="sel"><input type="checkbox" data-id="${r.id}"` +
+        (S.sel.has(r.id) ? " checked" : "") + `></td>` +
+      `<td><span class="nm">${esc(label)}` +
+        `<span class="sub">${esc(r.server)}:${r.port}</span></span></td>` +
+      `<td><span class="tag">${esc(r.type)}</span></td>` +
+      `<td class="num">${tcp}</td>` +
+      `<td class="num ${cls}">${lat ? lat + " ms" : "-"}</td>` +
+      `<td class="num hide-sm">${r.ttfb ? fmtTime(r.ttfb) : "-"}</td>` +
+      `<td class="num">${spd}</td>` +
+      `<td>${st}</td>` +
+      `<td class="hide-sm">` +
+        `<button class="sm ghost" data-act="rename" data-id="${r.id}">改名</button>` +
+        `<button class="sm ghost" data-act="del" data-id="${r.id}">删除</button></td>`;
+    tr.onclick = (ev) => {
+      if (ev.target.closest("button") || ev.target.tagName === "INPUT") return;
+      if (r.uri) copy(r.uri).then(() => toast("已复制节点链接"));
+    };
+    tr.querySelector("input[type=checkbox]").onchange = (ev) => {
+      const id = Number(ev.target.dataset.id);
+      if (ev.target.checked) S.sel.add(id); else S.sel.delete(id);
+      syncSel();
+    };
+    tr.querySelectorAll("button[data-act]").forEach((b) => {
+      b.onclick = async (ev) => {
+        ev.stopPropagation();
+        const id = Number(b.dataset.id);
+        if (b.dataset.act === "rename") {
+          const n = S.nodes.find((x) => x.id === id);
+          askText("节点改名", n ? n.name : "", async (v) => {
+            if (!v) return;
+            await post("/api/probe/node/rename", { id, name: v });
+            n.name = v;
+            renderNodes();
+            toast("已改名");
+          });
+        } else {
+          if (!confirm("删除这个节点？")) return;
+          await post("/api/probe/node/delete", { ids: [id] });
+          S.nodes = S.nodes.filter((x) => x.id !== id);
+          S.sel.delete(id);
+          renderNodes();
+          toast("已删除");
+        }
+      };
+    });
+    tb.appendChild(tr);
+  });
+  syncSel();
+  updateExpTip();
+}
+
+function syncSel() {
+  const boxes = [...document.querySelectorAll("#tbl tbody input[type=checkbox]")];
+  const vis = boxes.map((b) => Number(b.dataset.id));
+  const nSel = vis.filter((id) => S.sel.has(id)).length;
+  const n = S.sel.size;
+  $("selBar").classList.toggle("on", n > 0);
+  $("selCount").textContent = (vis.length && vis.length < S.nodes.length)
+    ? `已选 ${n} 个（当前筛选里 ${nSel} 个）`
+    : `已选 ${n} 个`;
+  const all = $("selAll");
+  all.checked = vis.length > 0 && nSel >= vis.length;
+  all.indeterminate = nSel > 0 && nSel < vis.length;
+}
+
+function clearSel() {
+  S.sel.clear();
+  document.querySelectorAll("#tbl tbody input[type=checkbox]")
+    .forEach((c) => { c.checked = false; });
+  syncSel();
+}
+
+$("selAll").onchange = (ev) => {
+  const on = ev.target.checked;
+  S.sel.clear();
+  document.querySelectorAll("#tbl tbody input[type=checkbox]").forEach((c) => {
+    c.checked = on;
+    if (on) S.sel.add(Number(c.dataset.id));
+  });
+  syncSel();
+};
+$("btnSelClear").onclick = clearSel;
+
+/* ---------------- 历史记录 ---------------- */
+function renderRuns() {
+  const box = $("runs");
+  box.innerHTML = "";
+  $("runCount").textContent = S.runs.length + " 条";
+  $("runEmpty").classList.toggle("show", S.runs.length === 0);
+  S.runs.forEach((r) => {
+    const div = document.createElement("div");
+    div.className = "run" + (r.id === S.runId ? " on" : "");
+    const cls = r.status === "done" ? "done" : (r.status === "running" ? "running"
+      : (r.status === "error" ? "error" : ""));
+    const stText = { draft: "未检测", running: "检测中", done: "已完成",
+                     error: "出错", stopped: "已停止", empty: "空" }[r.status] || r.status;
+    const spd = r.spd || 0;
+    const spdTxt = spd ? `<b class="hi">${spd} 有速度</b>` : "0 有速度";
+    div.innerHTML =
+      `<div style="min-width:0;flex:1">` +
+        `<div class="t">${esc(r.title || r.source)}</div>` +
+        `<div class="meta">#${r.id} · ${esc(r.fmt)} · ${r.total} 个 · ` +
+          `${r.ok} 可用 · ${spdTxt} · ${ago(r.updated_at)}</div>` +
+      `</div>` +
+      `<span class="badge ${cls}">${stText}</span>` +
+      `<div class="acts">` +
+        `<button class="sm ghost" data-act="open" data-id="${r.id}">打开</button>` +
+        `<button class="sm ghost" data-act="rename" data-id="${r.id}">改名</button>` +
+        `<button class="sm ghost danger" data-act="del" data-id="${r.id}">删除</button>` +
+      `</div>`;
+    div.querySelectorAll("button[data-act]").forEach((b) => {
+      b.onclick = async (ev) => {
+        ev.stopPropagation();
+        const id = Number(b.dataset.id);
+        if (b.dataset.act === "open") return loadRun(id);
+        if (b.dataset.act === "rename") {
+          const cur = S.runs.find((x) => x.id === id);
+          return askText("记录改名", cur ? cur.title : "", async (v) => {
+            if (!v) return;
+            await post("/api/probe/rename", { id, title: v });
+            await loadRuns();
+            toast("已改名");
+          });
+        }
+        if (!confirm("删除这条记录？里面的节点会一起删掉。")) return;
+        await post("/api/probe/delete", { id });
+        if (S.runId === id) {
+          S.runId = null; S.nodes = []; S.sel.clear(); S.fmt = "";
+          $("nodeCount").textContent = "-";
+          renderNodes();
+        }
+        await loadRuns();
+        toast("已删除");
+      };
+    });
+    div.onclick = (ev) => {
+      if (ev.target.closest("button")) return;
+      loadRun(r.id);
+    };
+    box.appendChild(div);
+  });
+}
+
+async function loadRuns() {
+  try {
+    const d = await api("/api/probe/runs");
+    S.runs = d.runs || [];
+    renderRuns();
+  } catch (e) { /* 静默 */ }
+}
+
+/* ---------------- 启动检测 ---------------- */
+async function startTest(mode, ids) {
+  if (!S.runId) { toast("先拉取一个订阅，或从历史记录里打开一条"); return; }
+  const body = {
+    id: S.runId, mode,
+    size: S.size,
+    max_speed: Number($("fMax").value) || 15,
+  };
+  if (ids && ids.length) body.ids = ids;
+  try {
+    await post("/api/probe/test", body);
+    S.startedAt = Date.now() / 1000;
+    setRunning(true);
+    if (!S.showLog) toggleLog(true);
+    toast("已开始，日志在下面滚动");
+  } catch (e) {
+    toast("启动失败：" + e.message, 4000);
+  }
+}
+
+async function stop() {
+  try {
+    const d = await post("/api/probe/stop");
+    toast(d.ok ? "已发送停止信号" : "当前没有任务在跑");
+  } catch (e) { toast("停止失败：" + e.message); }
+}
+
+/* ---------------- 进度 / 日志 ---------------- */
+function setRunning(on) {
+  S.running = on;
+  ["btnAuto", "btnFast", "btnDeep", "btnSpeed", "btnFetch",
+   "btnSelFast", "btnSelDeep", "btnSelSpeed"].forEach((id) => {
+    if ($(id)) $(id).disabled = on;
+  });
+  $("btnStop").disabled = !on;
+  $("dot").className = "dot" + (on ? " live" : "");
+  $("dotText").textContent = on ? "检测中" : "空闲";
+  if (on && !S.tick) {
+    S.tick = setInterval(() => {
+      const s = Math.round(Date.now() / 1000 - S.startedAt);
+      $("pTime").textContent = s + "s";
+    }, 1000);
+  }
+  if (!on && S.tick) { clearInterval(S.tick); S.tick = null; }
+}
+
+function pushLog(text, tag) {
+  const box = $("logBox");
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+  const line = document.createElement("div");
+  if (tag) line.className = tag;
+  line.textContent = text;
+  box.appendChild(line);
+  while (box.childElementCount > 600) box.removeChild(box.firstChild);
+  if (atBottom) box.scrollTop = box.scrollHeight;
+}
+
+function toggleLog(force) {
+  S.showLog = force == null ? !S.showLog : !!force;
+  $("logBox").classList.toggle("show", S.showLog);
+  $("btnToggleLog").textContent = S.showLog ? "隐藏日志" : "显示日志";
+}
+$("btnToggleLog").onclick = () => toggleLog();
+
+function connectSSE() {
+  if (S.es) S.es.close();
+  const es = new EventSource("/api/probe/stream?since=0");
+  S.es = es;
+  es.onmessage = (ev) => {
+    let d;
+    try { d = JSON.parse(ev.data); } catch (e) { return; }
+    if (d.type === "line") {
+      pushLog(d.text, d.tag);
+      if (d.pct != null) {
+        $("pBar").style.width = Math.min(100, d.pct) + "%";
+        $("pPct").textContent = Math.round(d.pct) + "%";
+      }
+      if (d.phase) $("pPhase").textContent = d.phase;
+      if (d.detail) $("pDetail").textContent = d.detail;
+    } else if (d.type === "history") {
+      (d.lines || []).forEach((l) => {
+        if (typeof l === "string") pushLog(l);
+        else pushLog(l.text || "", l.tag || "");
+      });
+    } else if (d.type === "start") {
+      $("logBox").innerHTML = "";
+      setRunning(true);
+      S.startedAt = Date.now() / 1000;
+    } else if (d.type === "done") {
+      setRunning(false);
+      $("pBar").style.width = "100%";
+      $("pPct").textContent = "100%";
+      $("pPhase").textContent = d.code === 0 ? "完成" : "已中断";
+      if (S.runId) loadRun(S.runId);
+      loadRuns();
+    } else if (d.type === "status" && d.run) {
+      const r = d.run;
+      setRunning(!!r.running);
+      if (r.running) {
+        $("pPhase").textContent = r.phase || "运行中";
+        $("pDetail").textContent = r.detail || "";
+      }
+    }
+  };
+  es.onerror = () => {
+    // 断线重连由浏览器自己管，这里只把状态标回空闲
+    setRunning(false);
+  };
+}
+
+/* ---------------- 导出 ---------------- */
+function updateExpTip() {
+  const el = $("expTip");
+  if (!el) return;
+  if (!S.runId) { el.textContent = ""; return; }
+  let rows = S.nodes;
+  if ($("fOnlyOk").checked) rows = rows.filter((n) => n.ok);
+  if ($("fOnlySpeed").checked) rows = rows.filter((n) => n.speed);
+  if (!rows.length) { el.innerHTML = " 按当前勾选条件一个都没有。"; return; }
+  const sp = S.nodes.filter((n) => n.speed).length;
+  const nudge = (S.filter === "speed" && !$("fOnlySpeed").checked && sp)
+    ? `，勾上「只导出有下载速度的」就只导出这 ${sp} 个` : "";
+  el.innerHTML = ` 按当前勾选条件约 <b>${rows.length}</b> 个${nudge}。`;
+}
+
+async function doExport(kind) {
+  if (!S.runId) { toast("先打开一条记录"); return; }
+  const p = new URLSearchParams({
+    id: S.runId, fmt: $("fFmt").value, sort: $("fSort").value,
+    only_ok: $("fOnlyOk").checked ? "1" : "0",
+    only_speed: $("fOnlySpeed").checked ? "1" : "0",
+  });
+  if (kind === "download") {
+    location.href = "/api/probe/export?" + p.toString() + "&download=1";
+    return;
+  }
+  try {
+    const d = await api("/api/probe/export?" + p.toString());
+    if (!d.text) { toast("没有符合条件的节点"); return; }
+    await copy(d.text);
+    toast(`已复制 ${d.count} 个节点` + (d.skipped ? `（跳过 ${d.skipped} 个不支持的）` : ""));
+  } catch (e) { toast("导出失败：" + e.message, 4000); }
+}
+
+async function copy(text) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch (e) { /* 落到兜底 */ }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;left:-9999px;top:0";
+  document.body.appendChild(ta);
+  ta.select();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  if (!ok) toast("复制失败，请手动选择内容复制", 4000);
+  return ok;
+}
+
+/* ---------------- 绑定 ---------------- */
+$("btnFetch").onclick = fetchSub;
+$("fUrl").onkeydown = (e) => { if (e.key === "Enter") fetchSub(); };
+
+$("btnAuto").onclick = () => startTest("auto");
+$("btnFast").onclick = () => startTest("fast");
+$("btnDeep").onclick = () => startTest("deep");
+$("btnSpeed").onclick = () => startTest("speed");
+$("btnStop").onclick = stop;
+
+$("btnSelFast").onclick = () => startTest("fast", [...S.sel]);
+$("btnSelDeep").onclick = () => startTest("deep", [...S.sel]);
+$("btnSelSpeed").onclick = () => startTest("speed", [...S.sel]);
+$("btnSelDel").onclick = async () => {
+  const ids = [...S.sel];
+  if (!ids.length) return;
+  if (!confirm(`删除选中的 ${ids.length} 个节点？`)) return;
+  await post("/api/probe/node/delete", { ids });
+  S.nodes = S.nodes.filter((n) => !S.sel.has(n.id));
+  clearSel();
+  renderNodes();
+  toast(`已删除 ${ids.length} 个`);
+};
+
+document.querySelectorAll("#segSize button").forEach((b) => {
+  b.onclick = () => {
+    S.size = Number(b.dataset.size);
+    document.querySelectorAll("#segSize button").forEach(
+      (x) => x.classList.toggle("on", x === b));
+  };
+});
+document.querySelectorAll("#segSize button").forEach((b) => {
+  if (b.classList.contains("on")) S.size = Number(b.dataset.size);
+});
+
+/* 筛选 */
+document.querySelectorAll("#segFilter button").forEach((b) => {
+  b.onclick = () => setFilter(b.dataset.f);
+});
+$("fMinSpeed").oninput = () => {
+  const v = parseFloat($("fMinSpeed").value);
+  S.minSpeed = (!v || v <= 0) ? 0 : v;
+  renderNodes();
+};
+$("fSearch").oninput = () => {
+  S.q = $("fSearch").value.trim().toLowerCase();
+  renderNodes();
+};
+$("btnTestVisible").onclick = () => {
+  const rows = visibleNodes();
+  if (!rows.length) { toast("当前筛选没有节点可测"); return; }
+  if (rows.length > 60) {
+    const mb = rows.length * S.size;
+    if (!confirm(`给 ${rows.length} 个节点测 ${S.size}MB，最多约 ${mb} MB 流量，继续？`)) return;
+  }
+  startTest("speed", rows.map((n) => n.id));
+};
+
+$("fOnlyOk").onchange = updateExpTip;
+$("fOnlySpeed").onchange = updateExpTip;
+
+$("btnCopy").onclick = () => doExport("copy");
+$("btnDownload").onclick = () => doExport("download");
+
+/* 启动 */
+(async function boot() {
+  connectSSE();
+  await loadRuns();
+  // 打开最近一条，省得每次进来都是空白
+  if (S.runs.length) loadRun(S.runs[0].id);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+fetch:
+  timeout: 25
+  retries: 1
+  concurrency: 16
+  use_system_proxy: false
+  proxy: socks5h://127.0.0.1:10808
+  use_proxy: false
+  mirrors:
+  - https://raw.githubusercontent.com/{path}
+  - https://gh-proxy.com/https://raw.githubusercontent.com/{path}
+  - https://ghproxy.net/https://raw.githubusercontent.com/{path}
+  - https://cdn.jsdelivr.net/gh/{path_jsd}
+  - https://ghfast.top/https://raw.githubusercontent.com/{path}
+sources_file: sources/registry.yaml
+store:
+  db: data/nodes.db
+  prune_days: 7
+check:
+  tcp:
+    enabled: true
+    timeout: 3.0
+    threads: 400
+  real:
+    enabled: true
+    threads: 48
+    timeout_ms: 5000
+    chunk: 250
+    test_urls:
+    - https://www.gstatic.com/generate_204
+    - https://cp.cloudflare.com/generate_204
+    fail_threshold: 3
+    max_nodes: 0
+    max_latency: 3000
+  # 最终筛查：给已经可用的节点测真实下载速度（字节/秒），结果写进 nodes.speed。
+  # 订阅页的「有速度」那一档就是靠它。费流量，所以只测延迟最好的前 count 个：
+  # 最坏情况 count × size = 30 × 10MB ≈ 300MB 一次，慢节点超时提前停会更少。
+  # 嫌费流量就调小 count，或者设 enabled: false 关掉。
+  speed:
+    enabled: true
+    count: 30
+    size: 10
+    max_sec: 12
+    chunk: 10
+  mihomo_path: ''
+  controller_port: 19090
+  verify_after_all: true
+export:
+  dir: output
+  max_latency: 5000
+  top_n: 0
+
+# 网页版（web.py）。token 留空会在首次启动时生成并写进 data/web_token.txt
+web:
+  host: 0.0.0.0
+  port: 8787
+  token: ''

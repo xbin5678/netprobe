@@ -1,0 +1,30 @@
+# 数据采集面板 · Caddy 站点块模板
+# install.sh 会替换 __DOMAIN__ / __PORT__，把 # >>> nodehub 到 # <<< nodehub
+# 之间的内容整段写进 /etc/caddy/Caddyfile；卸载时按这两行标记整段删除。
+#
+# 说明：
+# - 不开 encode：页面才 23KB，压缩收益为零，反而可能把 SSE 攒在缓冲区里
+# - flush_interval -1：SSE 日志必须立刻吐出去，不能等缓冲区满
+# - 应用自己带令牌鉴权，这里只负责 TLS 和转发
+# >>> nodehub
+__DOMAIN__ {
+	# 只压缩 JSON / HTML。绝不能压 SSE（/api/stream），否则日志会被攒在缓冲区里，
+	# 所以这里按路径白名单开，而不是全局 encode。
+	# /sub/* 是订阅本体，clash 配置能有几十 KB，走国际链路压一下差好几倍。
+	# 注意：一个 @matcher 只能定义一次，多个路径要写在同一行的 path 参数里（OR 关系）。
+	@comp path / /index.html /probe /api/status /api/sources /api/nodes /api/export /api/report /api/log /api/probe/run /api/probe/runs /api/probe/export /sub/*
+	encode @comp gzip
+__TLS__
+	reverse_proxy 127.0.0.1:__PORT__ {
+		flush_interval -1
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+}
+# <<< nodehub
